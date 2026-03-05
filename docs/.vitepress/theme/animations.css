@@ -1,0 +1,53 @@
+@keyframes mesh-drift {
+  0% { --crimson-hue: 11; }
+  33% { --crimson-hue: 320; }
+  66% { --crimson-hue: 200; }
+  100% { --crimson-hue: 11; }
+}
+
+.hero-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 40%, var(--g-stop-1) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 60%, var(--g-stop-2) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 20%, var(--g-stop-3) 0%, transparent 60%);
+  animation: mesh-drift 12s ease-in-out infinite;
+  will-change: background;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-gradient {
+    animation: none;
+  }
+}
+
+/* View transition names for smooth page navigation */
+.VPContent {
+  view-transition-name: main-content;
+}
+
+.VPNav {
+  view-transition-name: navigation;
+}
+
+/* GPU-composited bar chart animations for visualizer */
+.resize-bar {
+  will-change: transform;
+  transition: transform 0.1s ease-out;
+}
+
+/* Content visibility for long API pages */
+.vp-doc .api-section {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+/* Smooth opacity transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

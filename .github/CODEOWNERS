@@ -1,0 +1,15 @@
+# Global code owners
+* @crimson-dev
+
+# Core library
+/src/ @crimson-dev
+/tests/ @crimson-dev
+
+# Documentation
+/docs/ @crimson-dev
+
+# CI/CD
+/.github/ @crimson-dev
+
+# Benchmarks
+/bench/ @crimson-dev

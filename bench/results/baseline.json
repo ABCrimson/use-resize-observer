@@ -1,0 +1,5 @@
+{
+  "timestamp": "2026-03-05T00:00:00.000Z",
+  "benchmarks": {},
+  "note": "Initial baseline — populate by running `npm run bench`"
+}

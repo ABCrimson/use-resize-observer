@@ -1,0 +1,33 @@
+[
+  {
+    "name": "Main entry (useResizeObserver)",
+    "path": "dist/index.js",
+    "limit": "300 B",
+    "gzip": true,
+    "import": "{ useResizeObserver }"
+  },
+  {
+    "name": "Worker entry (useResizeObserverWorker)",
+    "path": "dist/worker.js",
+    "limit": "1 kB",
+    "gzip": true
+  },
+  {
+    "name": "Shim entry",
+    "path": "dist/shim.js",
+    "limit": "1.5 kB",
+    "gzip": true
+  },
+  {
+    "name": "Server entry",
+    "path": "dist/server.js",
+    "limit": "300 B",
+    "gzip": true
+  },
+  {
+    "name": "Core entry (framework-agnostic)",
+    "path": "dist/core.js",
+    "limit": "500 B",
+    "gzip": true
+  }
+]

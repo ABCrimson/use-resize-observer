@@ -1,0 +1,16 @@
+{
+  "entryPoints": ["src/index.ts", "src/worker/index.ts", "src/shim.ts", "src/server.ts", "src/core.ts"],
+  "entryPointStrategy": "resolve",
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "out": "docs/api",
+  "theme": "vitepress",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "includeVersion": true,
+  "searchInComments": true,
+  "groupOrder": ["Functions", "Types", "Interfaces", "Variables"],
+  "parametersFormat": "table",
+  "propertiesFormat": "table",
+  "enumMembersFormat": "table"
+}

@@ -1,0 +1,128 @@
+{
+  "name": "@crimson_dev/use-resize-observer",
+  "version": "0.0.1",
+  "description": "Zero-dependency, Worker-native, ESNext-first React 19 ResizeObserver hook",
+  "type": "module",
+  "sideEffects": false,
+  "license": "MIT",
+  "author": {
+    "name": "Crimson Dev",
+    "url": "https://github.com/crimson-dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/crimson-dev/use-resize-observer.git"
+  },
+  "keywords": [
+    "react",
+    "hook",
+    "resize",
+    "ResizeObserver",
+    "typescript",
+    "esm",
+    "worker",
+    "performance"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "import": "./dist/worker.js"
+    },
+    "./shim": {
+      "types": "./dist/shim.d.ts",
+      "import": "./dist/shim.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=25.0.0"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "react": ">=19.3.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "typescript": "6.0.0-dev.20260305",
+    "@typescript/native-preview": "7.0.0-dev.20260305.1",
+    "tsdown": "0.21.0-beta.5",
+    "@biomejs/biome": "2.4.5",
+    "vitest": "4.1.0-beta.5",
+    "@vitest/browser-playwright": "4.1.0-beta.5",
+    "@vitest/coverage-v8": "4.1.0-beta.5",
+    "@vitest/ui": "4.1.0-beta.5",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "playwright": "1.59.0-alpha-2026-03-05",
+    "happy-dom": "20.8.3",
+    "react": "19.3.0-canary-3bc2d414-20260304",
+    "react-dom": "19.3.0-canary-3bc2d414-20260304",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "4.5.0",
+    "vitepress": "2.0.0-alpha.16",
+    "vitepress-plugin-mermaid": "2.0.17",
+    "typedoc": "0.28.17",
+    "typedoc-plugin-markdown": "4.10.0",
+    "typedoc-vitepress-theme": "1.1.2",
+    "shiki": "4.0.1",
+    "tinybench": "6.0.0",
+    "@changesets/cli": "2.30.0",
+    "size-limit": "12.0.0",
+    "@size-limit/preset-small-lib": "12.0.0",
+    "svgo": "4.0.1",
+    "tsx": "4.21.0",
+    "concurrently": "9.2.1",
+    "publint": "0.3.0",
+    "simple-git-hooks": "2.12.0"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx @biomejs/biome check --staged"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "lint": "biome check ./src ./tests ./bench",
+    "format": "biome check --write ./src ./tests ./bench",
+    "typecheck": "tsc --noEmit",
+    "typecheck:ts7": "tsgo --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:browser": "vitest run --project browser:chromium --project browser:firefox --project browser:webkit",
+    "test:coverage": "vitest run --coverage",
+    "bench": "tsx bench/pool.ts && tsx bench/hook.ts && tsx bench/worker.ts && tsx bench/memory.ts && tsx bench/scheduler.ts",
+    "size": "size-limit",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "typedoc && vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "release": "changeset publish --provenance",
+    "version": "changeset version",
+    "optimize-svgs": "tsx scripts/optimize-svgs.ts",
+    "prepare": "simple-git-hooks"
+  }
+}

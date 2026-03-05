@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" fill="none">
+  <style>
+    @media (prefers-reduced-motion: reduce) {
+      .msg-flow { animation: none !important; }
+    }
+    .lane { fill: oklch(15% 0.02 11); stroke: oklch(30% 0.03 11); stroke-width: 1; rx: 8; }
+    .lane-label { fill: oklch(72% 0.02 11); font-family: 'Geist', system-ui; font-size: 14px; font-weight: 600; text-anchor: middle; }
+    .step { fill: oklch(20% 0.04 11); stroke: oklch(52% 0.26 11); stroke-width: 1.5; rx: 5; }
+    .step-worker { fill: oklch(20% 0.04 280); stroke: oklch(58% 0.22 280); stroke-width: 1.5; rx: 5; }
+    .step-text { fill: oklch(90% 0.01 11); font-family: 'Geist Mono', monospace; font-size: 11px; text-anchor: middle; }
+    .msg { stroke: oklch(52% 0.26 11); stroke-width: 1.5; marker-end: url(#arrow-r); }
+    .msg-back { stroke: oklch(58% 0.22 280); stroke-width: 1.5; stroke-dasharray: 4 3; marker-end: url(#arrow-l); }
+    .msg-flow { animation: dash 2s linear infinite; }
+    @keyframes dash {
+      to { stroke-dashoffset: -14; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow-r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="oklch(52% 0.26 11)" />
+    </marker>
+    <marker id="arrow-l" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto">
+      <polygon points="8 0, 0 3, 8 6" fill="oklch(58% 0.22 280)" />
+    </marker>
+  </defs>
+
+  <!-- Lanes -->
+  <rect class="lane" x="40" y="40" width="320" height="340" />
+  <text class="lane-label" x="200" y="70">Main Thread</text>
+
+  <rect class="lane" x="440" y="40" width="320" height="340" />
+  <text class="lane-label" x="600" y="70">Worker Thread</text>
+
+  <!-- Main thread steps -->
+  <rect class="step" x="60" y="90" width="280" height="35" />
+  <text class="step-text" x="200" y="112">useResizeObserverWorker(ref)</text>
+
+  <rect class="step" x="60" y="155" width="280" height="35" />
+  <text class="step-text" x="200" y="177">postMessage({ op: 'observe' })</text>
+
+  <rect class="step" x="60" y="240" width="280" height="35" />
+  <text class="step-text" x="200" y="262">Atomics.waitAsync(sab, idx)</text>
+
+  <rect class="step" x="60" y="305" width="280" height="35" />
+  <text class="step-text" x="200" y="327">rAF: read Float16Array → setState</text>
+
+  <!-- Worker thread steps -->
+  <rect class="step-worker" x="460" y="155" width="280" height="35" />
+  <text class="step-text" x="600" y="177">ResizeObserver.observe(el)</text>
+
+  <rect class="step-worker" x="460" y="220" width="280" height="35" />
+  <text class="step-text" x="600" y="242">Write Float16Array to SAB</text>
+
+  <rect class="step-worker" x="460" y="280" width="280" height="35" />
+  <text class="step-text" x="600" y="302">Atomics.notify(sab, idx)</text>
+
+  <!-- Messages -->
+  <line class="msg" x1="340" y1="172" x2="458" y2="172" />
+  <line class="msg-back msg-flow" x1="458" y1="297" x2="340" y2="257" />
+</svg>

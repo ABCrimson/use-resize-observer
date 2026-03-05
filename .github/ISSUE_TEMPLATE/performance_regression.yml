@@ -1,0 +1,46 @@
+name: Performance Regression
+description: Report a performance regression
+title: "[Perf]: "
+labels: ["performance", "triage"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Regression Description
+      description: What performance regression did you observe?
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics
+      description: |
+        Provide before/after numbers:
+        - Bundle size change
+        - Render time change
+        - Memory usage change
+        - Ops/sec change
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version-before
+    attributes:
+      label: Version Before (working)
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: version-after
+    attributes:
+      label: Version After (regressed)
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Steps to reproduce the performance regression
+    validations:
+      required: true

@@ -1,0 +1,50 @@
+@property --crimson-hue {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 11;
+}
+
+:root {
+  --c-primary: oklch(52% 0.26 var(--crimson-hue));
+  --c-primary-soft: oklch(52% 0.26 var(--crimson-hue) / 0.12);
+  --c-primary-hover: oklch(58% 0.26 var(--crimson-hue));
+
+  --c-accent: oklch(58% 0.22 280);
+  --c-accent-soft: oklch(58% 0.22 280 / 0.10);
+
+  --c-bg: oklch(13% 0.02 var(--crimson-hue));
+  --c-bg-soft: oklch(17% 0.02 var(--crimson-hue));
+  --c-bg-mute: oklch(20% 0.02 var(--crimson-hue));
+
+  --c-text-1: oklch(94% 0.01 var(--crimson-hue));
+  --c-text-2: oklch(72% 0.02 var(--crimson-hue));
+  --c-text-3: oklch(55% 0.02 var(--crimson-hue));
+
+  --c-code-bg: oklch(16% 0.025 var(--crimson-hue));
+
+  --g-stop-1: oklch(38% 0.28 var(--crimson-hue));
+  --g-stop-2: oklch(42% 0.22 280);
+  --g-stop-3: oklch(48% 0.18 220);
+
+  /* VitePress theme overrides */
+  --vp-c-brand-1: var(--c-primary);
+  --vp-c-brand-2: var(--c-primary-hover);
+  --vp-c-brand-soft: var(--c-primary-soft);
+  --vp-c-bg: var(--c-bg);
+  --vp-c-bg-soft: var(--c-bg-soft);
+  --vp-c-bg-mute: var(--c-bg-mute);
+  --vp-c-text-1: var(--c-text-1);
+  --vp-c-text-2: var(--c-text-2);
+  --vp-c-text-3: var(--c-text-3);
+  --vp-code-bg: var(--c-code-bg);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --c-bg: oklch(98% 0.005 var(--crimson-hue));
+    --c-bg-soft: oklch(95% 0.007 var(--crimson-hue));
+    --c-text-1: oklch(18% 0.02 var(--crimson-hue));
+    --c-text-2: oklch(38% 0.02 var(--crimson-hue));
+    --c-code-bg: oklch(93% 0.008 var(--crimson-hue));
+  }
+}

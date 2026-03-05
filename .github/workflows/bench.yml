@@ -1,0 +1,40 @@
+name: Performance Benchmarks
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['src/**', 'bench/**']
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Run Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '25', cache: 'npm' }
+      - run: npm ci
+      - run: npm run build
+      - run: npm run bench
+      - name: Compare with baseline
+        run: node scripts/bench-compare.mjs
+      - name: Post results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('./bench/results/comparison.json')) {
+              const report = JSON.parse(fs.readFileSync('./bench/results/comparison.json', 'utf8'));
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: report.markdown || '## Benchmark Results\n\nNo regressions detected.',
+              });
+            }
