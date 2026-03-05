@@ -80,22 +80,21 @@ export const useResizeObserver = <T extends Element = Element>(
 
     const observerRoot = root ?? element.ownerDocument;
     const pool = getSharedPool(observerRoot);
-    const currentBox = boxRef.current;
 
     const callback: ResizeCallback = (resizeEntry) => {
-      const { width: w, height: h } = extractDimensions(resizeEntry, currentBox);
+      const { width: w, height: h } = extractDimensions(resizeEntry, boxRef.current);
       setWidth(w);
       setHeight(h);
       setEntry(resizeEntry);
       onResizeRef.current?.(resizeEntry);
     };
 
-    pool.observe(element, { box: currentBox }, callback);
+    pool.observe(element, { box }, callback);
 
     return () => {
       pool.unobserve(element, callback);
     };
-  }, [targetRef, root]);
+  }, [targetRef, box, root]);
 
   return { ref: targetRef, width, height, entry };
 };

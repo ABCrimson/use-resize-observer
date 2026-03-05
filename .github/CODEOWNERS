@@ -1,15 +1,15 @@
 # Global code owners
-* @crimson-dev
+* @ABCrimson
 
 # Core library
-/src/ @crimson-dev
-/tests/ @crimson-dev
+/src/ @ABCrimson
+/tests/ @ABCrimson
 
 # Documentation
-/docs/ @crimson-dev
+/docs/ @ABCrimson
 
 # CI/CD
-/.github/ @crimson-dev
+/.github/ @ABCrimson
 
 # Benchmarks
-/bench/ @crimson-dev
+/bench/ @ABCrimson

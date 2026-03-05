@@ -1,92 +1,79 @@
-[![npm version](https://img.shields.io/npm/v/@crimson_dev/use-resize-observer.svg)](https://npmjs.com/package/@crimson_dev/use-resize-observer)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/@crimson_dev/use-resize-observer)](https://bundlephobia.com/package/@crimson_dev/use-resize-observer)
-[![CI](https://github.com/crimson-dev/use-resize-observer/actions/workflows/ci.yml/badge.svg)](https://github.com/crimson-dev/use-resize-observer/actions/workflows/ci.yml)
-[![coverage](https://codecov.io/gh/crimson-dev/use-resize-observer/branch/main/graph/badge.svg)](https://codecov.io/gh/crimson-dev/use-resize-observer)
-[![license](https://img.shields.io/npm/l/@crimson_dev/use-resize-observer.svg)](https://github.com/crimson-dev/use-resize-observer/blob/main/LICENSE)
-
 <div align="center">
 
-```
-   ██████╗██████╗ ██╗███╗   ███╗███████╗ ██████╗ ███╗   ██╗
-  ██╔════╝██╔══██╗██║████╗ ████║██╔════╝██╔═══██╗████╗  ██║
-  ██║     ██████╔╝██║██╔████╔██║███████╗██║   ██║██╔██╗ ██║
-  ██║     ██╔══██╗██║██║╚██╔╝██║╚════██║██║   ██║██║╚██╗██║
-  ╚██████╗██║  ██║██║██║ ╚═╝ ██║███████║╚██████╔╝██║ ╚████║
-   ╚═════╝╚═╝  ╚═╝╚═╝╚═╝     ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═══╝
-              use-resize-observer
-```
+<br />
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ABCrimson/use-resize-observer/main/.github/assets/logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/ABCrimson/use-resize-observer/main/.github/assets/logo-light.svg">
+  <img alt="@crimson_dev/use-resize-observer" src="https://raw.githubusercontent.com/ABCrimson/use-resize-observer/main/.github/assets/logo-light.svg" width="480">
+</picture>
+
+<br />
 
 **Zero-dependency, Worker-native, ESNext-first React 19 ResizeObserver hook**
 
+<br />
+
+[![npm version][npm-badge]][npm-url]
+[![bundle size][size-badge]][size-url]
+[![CI][ci-badge]][ci-url]
+[![license][license-badge]][license-url]
+[![TypeScript][ts-badge]][ts-url]
+
+[npm-badge]: https://img.shields.io/npm/v/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117
+[npm-url]: https://npmjs.com/package/@crimson_dev/use-resize-observer
+[size-badge]: https://img.shields.io/bundlephobia/minzip/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117&label=gzip
+[size-url]: https://bundlephobia.com/package/@crimson_dev/use-resize-observer
+[ci-badge]: https://img.shields.io/github/actions/workflow/status/ABCrimson/use-resize-observer/ci.yml?style=flat-square&labelColor=0D1117&label=CI
+[ci-url]: https://github.com/ABCrimson/use-resize-observer/actions/workflows/ci.yml
+[license-badge]: https://img.shields.io/npm/l/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117
+[license-url]: https://github.com/ABCrimson/use-resize-observer/blob/main/LICENSE
+[ts-badge]: https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&labelColor=0D1117
+[ts-url]: https://www.typescriptlang.org/
+
 </div>
 
-## Install
+---
+
+## Quick Start
 
 ```bash
 npm install @crimson_dev/use-resize-observer
 ```
 
-## Usage
-
 ```tsx
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 
-const App = () => {
+function ResponsiveCard() {
   const { ref, width, height } = useResizeObserver<HTMLDivElement>();
-  return <div ref={ref}>{width} x {height}</div>;
-};
+
+  return (
+    <div ref={ref}>
+      {width} × {height}
+    </div>
+  );
+}
 ```
 
-## Features
+## Why This Exists
 
-| Feature | Detail |
-|---------|--------|
-| Bundle size | **< 300B** min+gzip |
-| Dependencies | **0** runtime deps |
-| React | **>= 19.3.0** with Compiler support |
-| Module | **ESM-only**, `sideEffects: false` |
-| TypeScript | **6.0** strict, `isolatedDeclarations` |
-| Worker mode | `SharedArrayBuffer` + `Float16Array` off-main-thread |
-| Box models | `content-box`, `border-box`, `device-pixel-content-box` |
-| Pool | Single shared `ResizeObserver` per document root |
-| Batching | `rAF` + `startTransition` = 1 render per frame |
-| SSR/RSC | Server entry with mock result |
-| GC cleanup | `FinalizationRegistry` for detached elements |
+Most resize hooks create **one `ResizeObserver` per component**. At scale, that means hundreds of observers competing for the main thread. This library uses a **shared observer pool** — one `ResizeObserver` per document root — with `requestAnimationFrame` batching and React `startTransition` wrapping. The result: **100 elements resizing = 1 render cycle**.
 
-## Comparison with upstream
+## Highlights
 
-| | `use-resize-observer@9` | `@crimson_dev/use-resize-observer` |
-|---|---|---|
-| Bundle | ~800B | **< 300B** |
-| React | 16.8+ | 19.3+ |
-| Module | CJS + ESM | **ESM only** |
-| TypeScript | 4.x | **6.0 strict** |
-| Worker mode | No | **Yes** |
-| Pool architecture | No | **Shared pool** |
-| Box model options | No | **All 3** |
-| React Compiler | Untested | **Verified** |
-| GC cleanup | Manual | **Automatic** |
+<table>
+<tr><td>📦</td><td><strong>&lt; 1.1kB</strong> gzip &middot; zero dependencies</td></tr>
+<tr><td>⚡</td><td>Shared <code>ResizeObserver</code> pool &middot; rAF batching &middot; <code>startTransition</code></td></tr>
+<tr><td>🧵</td><td>Worker mode via <code>SharedArrayBuffer</code> + <code>Float16Array</code></td></tr>
+<tr><td>🎯</td><td>All 3 box models: <code>content-box</code>, <code>border-box</code>, <code>device-pixel-content-box</code></td></tr>
+<tr><td>🧹</td><td><code>FinalizationRegistry</code> for automatic GC cleanup</td></tr>
+<tr><td>🏗️</td><td>ES2026: <code>using</code> / <code>Symbol.dispose</code>, <code>Promise.try()</code></td></tr>
+<tr><td>⚛️</td><td>React 19.3+ &middot; React Compiler verified</td></tr>
+<tr><td>📝</td><td>TypeScript 6 strict &middot; <code>isolatedDeclarations</code></td></tr>
+<tr><td>🌐</td><td>SSR/RSC safe &middot; server entry with mock result</td></tr>
+</table>
 
-## Architecture
-
-```mermaid
-graph TD
-    A[useResizeObserver] --> B[ObserverPool]
-    B --> C[Single ResizeObserver]
-    C --> D[RafScheduler]
-    D --> E[startTransition]
-    E --> F[React setState batch]
-    F --> G[Single paint]
-
-    H[useResizeObserverWorker] --> I[Worker Thread]
-    I --> J[SharedArrayBuffer]
-    J --> K[Float16Array]
-    K --> L[Atomics.notify]
-    L --> M[rAF read loop]
-    M --> E
-```
-
-## Exports
+## Entry Points
 
 ```typescript
 // Main — primary hook
@@ -95,10 +82,10 @@ import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 // Multi-element — observe N elements with 1 hook
 import { useResizeObserverEntries } from '@crimson_dev/use-resize-observer';
 
-// Factory — framework-agnostic
+// Factory — framework-agnostic, imperative API
 import { createResizeObserver } from '@crimson_dev/use-resize-observer';
 
-// Worker — off-main-thread
+// Worker — off-main-thread via SharedArrayBuffer
 import { useResizeObserverWorker } from '@crimson_dev/use-resize-observer/worker';
 
 // Core — EventTarget-based, any framework
@@ -111,17 +98,88 @@ import { createServerResizeObserverMock } from '@crimson_dev/use-resize-observer
 import '@crimson_dev/use-resize-observer/shim';
 ```
 
-## Documentation
+## API
 
-Full documentation: [crimson-dev.github.io/use-resize-observer](https://crimson-dev.github.io/use-resize-observer/)
+### `useResizeObserver<T>(options?)`
 
-- [Getting Started](https://crimson-dev.github.io/use-resize-observer/guide/getting-started)
-- [Architecture](https://crimson-dev.github.io/use-resize-observer/guide/architecture)
-- [Worker Mode](https://crimson-dev.github.io/use-resize-observer/guide/worker)
-- [API Reference](https://crimson-dev.github.io/use-resize-observer/api/)
-- [Examples](https://crimson-dev.github.io/use-resize-observer/guide/examples)
-- [Migration Guide](https://crimson-dev.github.io/use-resize-observer/guide/migration)
+```typescript
+const { ref, width, height, entry } = useResizeObserver<HTMLDivElement>({
+  box: 'content-box',        // 'content-box' | 'border-box' | 'device-pixel-content-box'
+  ref: externalRef,           // optional external ref
+  root: shadowRoot,           // optional Document | ShadowRoot
+  onResize: (entry) => {},    // stable callback (no useCallback needed)
+});
+```
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `ref` | `RefObject<T \| null>` | Attach to the element to observe |
+| `width` | `number \| undefined` | Inline size of the observed box |
+| `height` | `number \| undefined` | Block size of the observed box |
+| `entry` | `ResizeObserverEntry \| undefined` | Raw entry from the observer |
+
+### `useResizeObserverEntries(refs, options?)`
+
+```typescript
+const entries = useResizeObserverEntries([ref1, ref2, ref3], {
+  box: 'border-box',
+});
+// entries: Map<Element, { width, height, entry }>
+```
+
+### `createResizeObserver(options?)`
+
+```typescript
+using observer = createResizeObserver({ box: 'border-box' });
+observer.observe(element, (entry) => console.log(entry));
+// Automatically cleaned up via Symbol.dispose
+```
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────┐
+│                  Your Components                 │
+│  useResizeObserver()  useResizeObserverEntries() │
+└──────────────────────┬──────────────────────────┘
+                       │
+              ┌────────▼────────┐
+              │   ObserverPool  │  1 per document root
+              │   (WeakMap)     │  FinalizationRegistry
+              └────────┬────────┘
+                       │
+              ┌────────▼────────┐
+              │  RafScheduler   │  Map<Element, FlushEntry>
+              │  last-write-wins│  requestAnimationFrame
+              └────────┬────────┘
+                       │
+              ┌────────▼────────┐
+              │ startTransition │  Non-urgent batched update
+              │   setState()    │  1 render per frame
+              └─────────────────┘
+```
+
+## Comparison
+
+| | `use-resize-observer@9` | `@crimson_dev/use-resize-observer` |
+|---|---|---|
+| Bundle | ~800B | **< 1.1kB** (pool + scheduler + hook) |
+| React | 16.8+ | **19.3+** with Compiler |
+| Module | CJS + ESM | **ESM only** |
+| TypeScript | 4.x | **6.0 strict** |
+| Observer model | 1 per component | **Shared pool** |
+| Worker mode | — | **SharedArrayBuffer** |
+| Box models | content-box only | **All 3** |
+| GC cleanup | Manual | **Automatic** |
+| Batching | None | **rAF + startTransition** |
+
+## Requirements
+
+- **Node** ≥ 25.0.0
+- **React** ≥ 19.3.0
+- **TypeScript** ≥ 6.0 (recommended)
+- **Browser** with native `ResizeObserver` (or use the `/shim` entry)
 
 ## License
 
-[MIT](./LICENSE) - Crimson Dev
+[MIT](./LICENSE) — Crimson Dev

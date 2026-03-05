@@ -11,7 +11,7 @@ hero:
       link: /guide/getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/crimson-dev/use-resize-observer
+      link: https://github.com/ABCrimson/use-resize-observer
     - theme: alt
       text: API Reference
       link: /api/

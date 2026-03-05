@@ -225,7 +225,7 @@ With the Performance panel open in DevTools, you should observe:
 ## Try It Yourself
 
 ```bash
-git clone https://github.com/crimson-dev/use-resize-observer.git
+git clone https://github.com/ABCrimson/use-resize-observer.git
 cd use-resize-observer
 npm install
 npm run docs:dev
@@ -235,4 +235,4 @@ Then navigate to `http://localhost:5173/use-resize-observer/demos/visualizer/`.
 
 ## Source Code
 
-The full visualizer source is at [`docs/.vitepress/theme/components/ResizeVisualizer.tsx`](https://github.com/crimson-dev/use-resize-observer/blob/main/docs/.vitepress/theme/components/ResizeVisualizer.tsx).
+The full visualizer source is at [`docs/.vitepress/theme/components/ResizeVisualizer.tsx`](https://github.com/ABCrimson/use-resize-observer/blob/main/docs/.vitepress/theme/components/ResizeVisualizer.tsx).

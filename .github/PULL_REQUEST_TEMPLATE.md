@@ -37,4 +37,4 @@
 
 ---
 
-> Generated with [@crimson_dev/use-resize-observer](https://github.com/crimson-dev/use-resize-observer)
+> Generated with [@crimson_dev/use-resize-observer](https://github.com/ABCrimson/use-resize-observer)

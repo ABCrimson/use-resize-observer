@@ -4,11 +4,14 @@ import { beforeEach, vi } from 'vitest';
 class MockResizeObserver implements ResizeObserver {
   readonly #callback: ResizeObserverCallback;
   static readonly instances: MockResizeObserver[] = [];
+  /** All ever-created instances — NOT cleared between tests. */
+  static readonly allInstances: MockResizeObserver[] = [];
   readonly observedTargets = new Map<Element, ResizeObserverOptions>();
 
   constructor(callback: ResizeObserverCallback) {
     this.#callback = callback;
     MockResizeObserver.instances.push(this);
+    MockResizeObserver.allInstances.push(this);
   }
 
   observe(target: Element, options?: ResizeObserverOptions): void {
@@ -26,6 +29,14 @@ class MockResizeObserver implements ResizeObserver {
   // Test helper: trigger a resize callback
   triggerResize(entries: ResizeObserverEntry[]): void {
     this.#callback(entries, this);
+  }
+
+  /** Find the observer instance that is observing the given element. */
+  static findObserverFor(el: Element): MockResizeObserver | undefined {
+    for (const instance of MockResizeObserver.allInstances) {
+      if (instance.observedTargets.has(el)) return instance;
+    }
+    return undefined;
   }
 
   // Test helper: create a mock entry

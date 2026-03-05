@@ -10,7 +10,13 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: 'oklch(52% 0.26 11)' }],
     ['meta', { name: 'og:type', content: 'website' }],
     ['meta', { name: 'og:title', content: '@crimson_dev/use-resize-observer' }],
-    ['meta', { name: 'og:description', content: 'Zero-dependency, Worker-native React 19 ResizeObserver hook' }],
+    [
+      'meta',
+      {
+        name: 'og:description',
+        content: 'Zero-dependency, Worker-native React 19 ResizeObserver hook',
+      },
+    ],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/use-resize-observer/logo.svg' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
@@ -91,9 +97,7 @@ export default defineConfig({
       ],
     },
 
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/crimson-dev/use-resize-observer' },
-    ],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/ABCrimson/use-resize-observer' }],
 
     search: {
       provider: 'local',
@@ -105,7 +109,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/crimson-dev/use-resize-observer/edit/main/docs/:path',
+      pattern: 'https://github.com/ABCrimson/use-resize-observer/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
 

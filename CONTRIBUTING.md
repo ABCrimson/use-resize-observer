@@ -13,7 +13,7 @@ Thank you for your interest in contributing!
 
 ```bash
 # Clone the repository
-git clone https://github.com/crimson-dev/use-resize-observer.git
+git clone https://github.com/ABCrimson/use-resize-observer.git
 cd use-resize-observer
 
 # Install dependencies

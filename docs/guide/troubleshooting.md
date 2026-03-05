@@ -263,7 +263,7 @@ Unlikely with this library -- the pool uses `WeakMap` keyed by DOM elements and 
 
 ## Still Stuck?
 
-1. Check the [GitHub Issues](https://github.com/crimson-dev/use-resize-observer/issues)
+1. Check the [GitHub Issues](https://github.com/ABCrimson/use-resize-observer/issues)
 2. Search for your error message in existing issues
 3. Open a new issue with a minimal reproduction
 4. Read the [Architecture guide](/guide/architecture) for deeper understanding of internals

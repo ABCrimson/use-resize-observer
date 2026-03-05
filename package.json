@@ -1,17 +1,17 @@
 {
   "name": "@crimson_dev/use-resize-observer",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Zero-dependency, Worker-native, ESNext-first React 19 ResizeObserver hook",
   "type": "module",
   "sideEffects": false,
   "license": "MIT",
   "author": {
     "name": "Crimson Dev",
-    "url": "https://github.com/crimson-dev"
+    "url": "https://github.com/ABCrimson"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/crimson-dev/use-resize-observer.git"
+    "url": "git+https://github.com/ABCrimson/use-resize-observer.git"
   },
   "keywords": [
     "react",

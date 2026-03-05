@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 80" fill="none">
+  <defs>
+    <linearGradient id="crimson-grad-d" x1="0" y1="0" x2="480" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#DC143C"/>
+      <stop offset="100%" stop-color="#FF4D6D"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="16" width="48" height="48" rx="12" fill="url(#crimson-grad-d)"/>
+  <path d="M14 40 L24 28 L34 40 L24 52 Z" fill="#0D1117" opacity="0.9"/>
+  <path d="M20 40 L24 34 L28 40 L24 46 Z" fill="white" opacity="0.8"/>
+  <text x="60" y="50" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="28" fill="white">@crimson_dev</text>
+  <text x="60" y="70" font-family="system-ui, -apple-system, sans-serif" font-weight="400" font-size="14" fill="#8B949E" letter-spacing="0.5">use-resize-observer</text>
+</svg>
