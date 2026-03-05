@@ -6,9 +6,12 @@ describe('useResizeObserverWorker (browser)', () => {
     expect(typeof globalThis.crossOriginIsolated).toBe('boolean');
   });
 
-  it.skipIf(!globalThis.crossOriginIsolated)('should work in crossOriginIsolated context', async () => {
-    // This test only runs when COOP/COEP headers are present
-    const { useResizeObserverWorker } = await import('../../src/worker/hook.js');
-    expect(typeof useResizeObserverWorker).toBe('function');
-  });
+  it.skipIf(!globalThis.crossOriginIsolated)(
+    'should work in crossOriginIsolated context',
+    async () => {
+      // This test only runs when COOP/COEP headers are present
+      const { useResizeObserverWorker } = await import('../../src/worker/hook.js');
+      expect(typeof useResizeObserverWorker).toBe('function');
+    },
+  );
 });

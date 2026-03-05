@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { render, act } from '@testing-library/react';
-import { useResizeObserver } from '../../src/hook.js';
+import { render } from '@testing-library/react';
 import { useRef } from 'react';
+import { describe, expect, it } from 'vitest';
+import { useResizeObserver } from '../../src/hook.js';
 
 const TestComponent = () => {
   const { ref, width, height } = useResizeObserver<HTMLDivElement>();

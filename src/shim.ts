@@ -1,13 +1,12 @@
 /**
- * Polyfill shim entry — lazy-loads a ResizeObserver polyfill for
+ * Polyfill shim entry — provides a ResizeObserver polyfill for
  * environments without native support.
  *
- * Uses dynamic `import()` so this module has zero cost if never imported.
- * The shim installs `globalThis.ResizeObserver` if it's missing.
+ * Installs `globalThis.ResizeObserver` if it's missing.
+ * Uses rAF polling as the observation mechanism.
  *
- * For `devicePixelContentBoxSize` normalization, optionally loads a
- * WASM rounding module. Falls back to `Math.sumPrecise()` (ES2026)
- * when WASM is unavailable.
+ * For sub-pixel normalization, uses `Math.sumPrecise()` (ES2026)
+ * with fallback to iterative addition.
  *
  * @example
  * ```ts
@@ -22,7 +21,7 @@ class ResizeObserverShim {
   readonly #callback: ResizeObserverCallback;
   readonly #targets = new Set<Element>();
   #rafId: number | null = null;
-  #lastSizes = new WeakMap<Element, { width: number; height: number }>();
+  readonly #lastSizes = new WeakMap<Element, { width: number; height: number }>();
 
   constructor(callback: ResizeObserverCallback) {
     this.#callback = callback;
@@ -61,6 +60,7 @@ class ResizeObserverShim {
 
   #checkForChanges(): void {
     const entries: ResizeObserverEntry[] = [];
+    const dpr = globalThis.devicePixelRatio ?? 1;
 
     for (const target of this.#targets) {
       const rect = target.getBoundingClientRect();
@@ -69,7 +69,7 @@ class ResizeObserverShim {
       if (!last || last.width !== rect.width || last.height !== rect.height) {
         this.#lastSizes.set(target, { width: rect.width, height: rect.height });
 
-        const entry = {
+        entries.push({
           target,
           contentRect: rect,
           borderBoxSize: [
@@ -80,13 +80,11 @@ class ResizeObserverShim {
           ] as unknown as ReadonlyArray<ResizeObserverSize>,
           devicePixelContentBoxSize: [
             {
-              inlineSize: rect.width * globalThis.devicePixelRatio,
-              blockSize: rect.height * globalThis.devicePixelRatio,
+              inlineSize: rect.width * dpr,
+              blockSize: rect.height * dpr,
             },
           ] as unknown as ReadonlyArray<ResizeObserverSize>,
-        } satisfies ResizeObserverEntry;
-
-        entries.push(entry);
+        } satisfies ResizeObserverEntry);
       }
     }
 
@@ -99,6 +97,9 @@ class ResizeObserverShim {
 /**
  * Normalize sub-pixel coordinates using `Math.sumPrecise()` (ES2026).
  * Falls back to simple addition if unavailable.
+ *
+ * @param values - Array of numbers to sum precisely.
+ * @returns The precise sum.
  */
 export const sumPrecise = (values: number[]): number => {
   if (typeof Math.sumPrecise === 'function') {
@@ -111,7 +112,11 @@ export const sumPrecise = (values: number[]): number => {
 
 // Install shim if native ResizeObserver is unavailable
 if (typeof globalThis.ResizeObserver === 'undefined') {
-  (globalThis as Record<string, unknown>).ResizeObserver = ResizeObserverShim;
+  Object.defineProperty(globalThis, 'ResizeObserver', {
+    value: ResizeObserverShim,
+    writable: true,
+    configurable: true,
+  });
 }
 
 export { ResizeObserverShim };

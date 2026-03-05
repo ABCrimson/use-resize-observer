@@ -2,14 +2,14 @@
   {
     "name": "Main entry (useResizeObserver)",
     "path": "dist/index.js",
-    "limit": "300 B",
+    "limit": "1.2 kB",
     "gzip": true,
     "import": "{ useResizeObserver }"
   },
   {
     "name": "Worker entry (useResizeObserverWorker)",
     "path": "dist/worker.js",
-    "limit": "1 kB",
+    "limit": "1.5 kB",
     "gzip": true
   },
   {

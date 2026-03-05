@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { getSharedPool } from './pool.js';
 import type { ResizeCallback, ResizeObserverBoxOptions } from './types.js';
@@ -20,6 +20,24 @@ export interface UseResizeObserverEntriesOptions {
   /** Document or ShadowRoot scoping the pool. @default document */
   root?: Document | ShadowRoot;
 }
+
+/**
+ * Extract the first size entry for the given box model.
+ * @internal
+ */
+const extractSize = (
+  entry: ResizeObserverEntry,
+  box: ResizeObserverBoxOptions,
+): ResizeObserverSize | undefined => {
+  switch (box) {
+    case 'border-box':
+      return entry.borderBoxSize[0];
+    case 'device-pixel-content-box':
+      return (entry.devicePixelContentBoxSize ?? entry.contentBoxSize)[0];
+    default:
+      return entry.contentBoxSize[0];
+  }
+};
 
 /**
  * Multi-element variant: observe multiple elements simultaneously through
@@ -46,9 +64,7 @@ export const useResizeObserverEntries = (
   boxRef.current = box;
 
   useEffect(() => {
-    const elements: Element[] = [];
-    const callbacks: Array<[Element, ResizeCallback]> = [];
-    const pools: Array<ReturnType<typeof getSharedPool>> = [];
+    const cleanups: Array<() => void> = [];
 
     for (const ref of refs) {
       const element = ref.current;
@@ -59,12 +75,7 @@ export const useResizeObserverEntries = (
       const currentBox = boxRef.current;
 
       const callback: ResizeCallback = (resizeEntry) => {
-        const [sizeEntry] =
-          currentBox === 'border-box'
-            ? resizeEntry.borderBoxSize
-            : currentBox === 'device-pixel-content-box'
-              ? (resizeEntry.devicePixelContentBoxSize ?? resizeEntry.contentBoxSize)
-              : resizeEntry.contentBoxSize;
+        const sizeEntry = extractSize(resizeEntry, currentBox);
 
         setEntries((prev) => {
           const next = new Map(prev);
@@ -77,20 +88,16 @@ export const useResizeObserverEntries = (
         });
       };
 
-      const observerOptions: ResizeObserverOptions = { box: currentBox };
-      pool.observe(element, observerOptions, callback);
-      elements.push(element);
-      callbacks.push([element, callback]);
-      pools.push(pool);
+      pool.observe(element, { box: currentBox }, callback);
+      cleanups.push(() => pool.unobserve(element, callback));
     }
 
     return () => {
-      for (let i = 0; i < callbacks.length; i++) {
-        const [element, callback] = callbacks[i]!;
-        pools[i]!.unobserve(element, callback);
+      for (const cleanup of cleanups) {
+        cleanup();
       }
     };
-  }, [refs, box, root]);
+  }, [refs, root]);
 
   return entries;
 };

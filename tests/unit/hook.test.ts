@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { useResizeObserver } from '../../src/hook.js';
 
 const flushRaf = (globalThis as Record<string, unknown>).flushRaf as () => void;
@@ -37,8 +37,10 @@ describe('useResizeObserver', () => {
     });
 
     // Re-render to trigger useEffect with the new ref value
-    const { result: result2 } = renderHook(() =>
-      useResizeObserver<HTMLDivElement>({ ref: result.current.ref as React.RefObject<HTMLDivElement | null> }),
+    const { result: _result2 } = renderHook(() =>
+      useResizeObserver<HTMLDivElement>({
+        ref: result.current.ref as React.RefObject<HTMLDivElement | null>,
+      }),
     );
 
     // Find the observer and trigger a resize
@@ -57,7 +59,9 @@ describe('useResizeObserver', () => {
   it('should accept external ref', () => {
     const externalRef = { current: null as HTMLDivElement | null };
     const { result } = renderHook(() =>
-      useResizeObserver<HTMLDivElement>({ ref: externalRef as React.RefObject<HTMLDivElement | null> }),
+      useResizeObserver<HTMLDivElement>({
+        ref: externalRef as React.RefObject<HTMLDivElement | null>,
+      }),
     );
     expect(result.current.ref).toBe(externalRef);
   });

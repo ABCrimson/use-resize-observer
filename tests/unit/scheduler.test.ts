@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { RafScheduler, createScheduler } from '../../src/scheduler.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createScheduler, RafScheduler } from '../../src/scheduler.js';
 
 // Access flushRaf from setup
 const flushRaf = (globalThis as Record<string, unknown>).flushRaf as () => void;
@@ -19,8 +19,13 @@ describe('RafScheduler', () => {
     const el = document.createElement('div');
     const cb = vi.fn();
     const entry = (globalThis as Record<string, unknown>).MockResizeObserver
-      ? (globalThis as Record<string, { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }>).MockResizeObserver.createEntry(el, 100, 50)
-      : {} as ResizeObserverEntry;
+      ? (
+          globalThis as Record<
+            string,
+            { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }
+          >
+        ).MockResizeObserver.createEntry(el, 100, 50)
+      : ({} as ResizeObserverEntry);
 
     scheduler.schedule(el, entry, new Set([cb]));
     expect(cb).not.toHaveBeenCalled();
@@ -33,7 +38,12 @@ describe('RafScheduler', () => {
   it('should deduplicate entries for the same element (last-write-wins)', () => {
     const el = document.createElement('div');
     const cb = vi.fn();
-    const MockRO = (globalThis as Record<string, { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }>).MockResizeObserver;
+    const MockRO = (
+      globalThis as Record<
+        string,
+        { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }
+      >
+    ).MockResizeObserver;
     const entry1 = MockRO.createEntry(el, 100, 50);
     const entry2 = MockRO.createEntry(el, 200, 100);
 
@@ -50,7 +60,12 @@ describe('RafScheduler', () => {
     const el2 = document.createElement('span');
     const cb1 = vi.fn();
     const cb2 = vi.fn();
-    const MockRO = (globalThis as Record<string, { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }>).MockResizeObserver;
+    const MockRO = (
+      globalThis as Record<
+        string,
+        { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }
+      >
+    ).MockResizeObserver;
 
     scheduler.schedule(el1, MockRO.createEntry(el1, 100, 50), new Set([cb1]));
     scheduler.schedule(el2, MockRO.createEntry(el2, 200, 100), new Set([cb2]));
@@ -63,7 +78,12 @@ describe('RafScheduler', () => {
   it('should cancel pending rAF on cancel()', () => {
     const el = document.createElement('div');
     const cb = vi.fn();
-    const MockRO = (globalThis as Record<string, { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }>).MockResizeObserver;
+    const MockRO = (
+      globalThis as Record<
+        string,
+        { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }
+      >
+    ).MockResizeObserver;
 
     scheduler.schedule(el, MockRO.createEntry(el, 100, 50), new Set([cb]));
     scheduler.cancel();
@@ -75,5 +95,19 @@ describe('RafScheduler', () => {
   it('should implement Symbol.dispose', () => {
     expect(typeof scheduler[Symbol.dispose]).toBe('function');
     scheduler[Symbol.dispose]();
+  });
+
+  it('should support ES2026 using declaration pattern', () => {
+    using disposableScheduler = createScheduler();
+    const el = document.createElement('div');
+    const cb = vi.fn();
+    const MockRO = (
+      globalThis as Record<
+        string,
+        { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }
+      >
+    ).MockResizeObserver;
+    disposableScheduler.schedule(el, MockRO.createEntry(el, 50, 25), new Set([cb]));
+    // Scheduler is disposed when block exits — pending callbacks cancelled
   });
 });

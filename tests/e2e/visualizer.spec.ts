@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, it } from 'vitest';
 
 describe('Resize Visualizer E2E', () => {
   it.todo('should render the visualizer without layout shifts');

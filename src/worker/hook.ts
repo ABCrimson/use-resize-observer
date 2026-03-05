@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { ResizeObserverBoxOptions, UseResizeObserverResult } from '../types.js';
-import { allocateSlot, MAX_ELEMENTS, readSlot, releaseSlot, SAB_SIZE } from './protocol.js';
 import type { WorkerMessage } from './protocol.js';
+import { allocateSlot, MAX_ELEMENTS, readSlot, releaseSlot, SAB_SIZE } from './protocol.js';
 
 /** Options for the Worker-based resize observer hook. */
 export interface UseResizeObserverWorkerOptions<T extends Element = Element> {
@@ -17,7 +17,7 @@ export interface UseResizeObserverWorkerOptions<T extends Element = Element> {
    * Called on every resize event. Identity is stable across renders
    * (powered by ref pattern) — do NOT wrap in useCallback.
    */
-  onResize?: (dimensions: { width: number; height: number }) => void;
+  onResize?: (dimensions: { readonly width: number; readonly height: number }) => void;
 }
 
 /** Shared Worker instance — lazy-initialized, lives until last observer unmounts. */
@@ -30,13 +30,17 @@ let workerReady = false;
 /** Promise that resolves when the Worker is initialized and ready. */
 let initPromise: Promise<void> | null = null;
 
+/**
+ * Lazily initialize the shared Worker with `Promise.withResolvers()` (ES2024+).
+ * Uses `Error.isError()` (ES2026) for robust error discrimination.
+ */
 const ensureWorker = (): Promise<void> => {
   if (initPromise) return initPromise;
 
   const { promise, resolve, reject } = Promise.withResolvers<void>();
   initPromise = promise;
 
-  try {
+  Promise.try(() => {
     if (!globalThis.crossOriginIsolated) {
       throw new Error(
         '[@crimson_dev/use-resize-observer/worker] ' +
@@ -69,9 +73,9 @@ const ensureWorker = (): Promise<void> => {
     });
 
     sharedWorker.postMessage({ op: 'init', sab: sharedSab } satisfies WorkerMessage);
-  } catch (error) {
+  }).catch((error: unknown) => {
     reject(Error.isError(error) ? error : new Error(String(error)));
-  }
+  });
 
   return promise;
 };
@@ -121,14 +125,14 @@ export const useResizeObserverWorker = <T extends Element = Element>(
     if (slotId === -1) {
       console.error(
         `[@crimson_dev/use-resize-observer/worker] ` +
-          `Maximum ${MAX_ELEMENTS} simultaneous observations exceeded.`,
+          `Maximum ${String(MAX_ELEMENTS)} simultaneous observations exceeded.`,
       );
       return;
     }
 
     activeObserverCount++;
-    let rafId: number | null = null;
     let cancelled = false;
+    let rafId: number | null = null;
 
     const startPolling = (): void => {
       const poll = (): void => {
@@ -149,11 +153,11 @@ export const useResizeObserverWorker = <T extends Element = Element>(
         sharedWorker?.postMessage({
           op: 'observe',
           slotId,
-          elementId: element.id || `slot-${slotId}`,
+          elementId: element.id || `slot-${String(slotId)}`,
         } satisfies WorkerMessage);
         startPolling();
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error('[@crimson_dev/use-resize-observer/worker] Init failed:', error);
       });
 

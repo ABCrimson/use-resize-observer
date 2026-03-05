@@ -10,18 +10,18 @@
  * @internal
  */
 
-import { writeSlot } from './protocol.js';
 import type { WorkerMessage } from './protocol.js';
+import { writeSlot } from './protocol.js';
 
 /** SharedArrayBuffer provided by the main thread. */
 let sab: SharedArrayBuffer | null = null;
 
-/** Map of slotId → observed element proxy for cleanup. */
-const observers = new Map<number, { observer: ResizeObserver; target: Element }>();
+/** Map of slotId -> observer instance for cleanup. */
+const observers = new Map<number, ResizeObserver>();
 
 /**
  * Handle messages from the main thread.
- * Uses `Error.isError()` (ES2026) for robust error discrimination.
+ * Uses `Error.isError()` (ES2026) for robust error discrimination in catch blocks.
  */
 const handleMessage = (event: MessageEvent<WorkerMessage>): void => {
   const { data } = event;
@@ -43,32 +43,30 @@ const handleMessage = (event: MessageEvent<WorkerMessage>): void => {
       }
 
       const { slotId } = data;
+      const localSab = sab;
 
       const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
-          writeSlot(sab!, slotId, entry);
+          writeSlot(localSab, slotId, entry);
         }
       });
 
-      // In a Worker context, we observe via transferred elements or proxies.
-      // For now, this stores the observer for cleanup.
-      observers.set(slotId, { observer, target: null as unknown as Element });
+      observers.set(slotId, observer);
       break;
     }
 
     case 'unobserve': {
-      const { slotId } = data;
-      const record = observers.get(slotId);
-      if (record) {
-        record.observer.disconnect();
-        observers.delete(slotId);
+      const observer = observers.get(data.slotId);
+      if (observer) {
+        observer.disconnect();
+        observers.delete(data.slotId);
       }
       break;
     }
 
     case 'terminate': {
-      for (const [, record] of observers) {
-        record.observer.disconnect();
+      for (const observer of observers.values()) {
+        observer.disconnect();
       }
       observers.clear();
       self.close();

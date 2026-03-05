@@ -1,5 +1,6 @@
 'use client';
 
+import type React from 'react';
 import { createContext, useContext } from 'react';
 
 /**
@@ -18,7 +19,9 @@ import { createContext, useContext } from 'react';
  * </ResizeObserverContext.Provider>
  * ```
  */
-export const ResizeObserverContext = createContext<typeof ResizeObserver | null>(null);
+export const ResizeObserverContext: React.Context<typeof ResizeObserver | null> = createContext<
+  typeof ResizeObserver | null
+>(null);
 
 ResizeObserverContext.displayName = 'ResizeObserverContext';
 

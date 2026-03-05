@@ -2,10 +2,13 @@ import { Bench } from 'tinybench';
 
 // Mock for Node environment
 globalThis.ResizeObserver = class {
-  constructor(private cb: ResizeObserverCallback) {}
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  readonly #cb: ResizeObserverCallback;
+  constructor(cb: ResizeObserverCallback) {
+    this.#cb = cb;
+  }
+  observe(): void {}
+  unobserve(): void {}
+  disconnect(): void {}
 } as unknown as typeof ResizeObserver;
 
 globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => {

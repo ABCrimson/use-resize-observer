@@ -2,21 +2,21 @@
  * SharedArrayBuffer protocol for Worker-based resize observations.
  *
  * Layout:
- * - 4 Float16 values per element slot (8 bytes each)
- * - Int32Array for Atomics.notify/waitAsync synchronization
+ * - 4 Float16 values per element slot (2 bytes each = 8 bytes per slot)
+ * - Int32Array overlay for `Atomics.notify()` / `Atomics.waitAsync()` synchronization
  * - Supports up to 256 simultaneous element observations
  *
  * @internal
  */
 
-/** Bytes per observation slot: 4 × Float16 (2 bytes each) = 8 bytes. */
-export const SLOT_BYTES = 8;
+/** Bytes per observation slot: 4 x Float16 (2 bytes each) = 8 bytes. */
+export const SLOT_BYTES: number = 8;
 
 /** Maximum number of simultaneously observable elements. */
-export const MAX_ELEMENTS = 256;
+export const MAX_ELEMENTS: number = 256;
 
 /** Total SharedArrayBuffer size in bytes. */
-export const SAB_SIZE = SLOT_BYTES * MAX_ELEMENTS;
+export const SAB_SIZE: number = SLOT_BYTES * MAX_ELEMENTS;
 
 /** Offsets within a single Float16Array slot. */
 export const SlotOffset = {
@@ -52,12 +52,13 @@ export const writeSlot = (
   entry: ResizeObserverEntry,
 ): void => {
   const view = new Float16Array(sab, slotId * SLOT_BYTES, 4);
-  const [cs] = entry.contentBoxSize;
-  const [bs] = entry.borderBoxSize;
+  const cs = entry.contentBoxSize[0];
+  const bs = entry.borderBoxSize[0];
   view[SlotOffset.InlineSize] = cs?.inlineSize ?? 0;
   view[SlotOffset.BlockSize] = cs?.blockSize ?? 0;
   view[SlotOffset.BorderInline] = bs?.inlineSize ?? 0;
   view[SlotOffset.BorderBlock] = bs?.blockSize ?? 0;
+  // Signal main thread that new data is available
   Atomics.notify(new Int32Array(sab), slotId, 1);
 };
 
@@ -72,23 +73,23 @@ export const readSlot = (
   sab: SharedArrayBuffer,
   slotId: number,
 ): {
-  width: number;
-  height: number;
-  borderWidth: number;
-  borderHeight: number;
+  readonly width: number;
+  readonly height: number;
+  readonly borderWidth: number;
+  readonly borderHeight: number;
 } => {
   const view = new Float16Array(sab, slotId * SLOT_BYTES, 4);
   return {
-    width: view[SlotOffset.InlineSize]!,
-    height: view[SlotOffset.BlockSize]!,
-    borderWidth: view[SlotOffset.BorderInline]!,
-    borderHeight: view[SlotOffset.BorderBlock]!,
+    width: view[SlotOffset.InlineSize] ?? 0,
+    height: view[SlotOffset.BlockSize] ?? 0,
+    borderWidth: view[SlotOffset.BorderInline] ?? 0,
+    borderHeight: view[SlotOffset.BorderBlock] ?? 0,
   };
 };
 
 /**
  * Allocate a slot from the bitmap tracker.
- * Uses a simple Int32Array bitmap for O(1) slot management.
+ * Scans for the first unallocated slot in O(n) worst case.
  *
  * @param bitmap - Int32Array tracking allocated slots (1 = in use).
  * @returns The allocated slot index, or -1 if all slots are in use.
@@ -110,5 +111,7 @@ export const allocateSlot = (bitmap: Int32Array): number => {
  * @param slotId - The slot index to release.
  */
 export const releaseSlot = (bitmap: Int32Array, slotId: number): void => {
-  bitmap[slotId] = 0;
+  if (slotId >= 0 && slotId < MAX_ELEMENTS) {
+    bitmap[slotId] = 0;
+  }
 };

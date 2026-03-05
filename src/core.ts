@@ -4,14 +4,14 @@
  * Uses the `EventTarget` API for zero-dependency event dispatching.
  * Can be adapted by any framework (React, Solid, Vue, Svelte, vanilla).
  *
+ * Implements `Disposable` for ES2026 `using` declarations.
+ *
  * @example
  * ```ts
- * const observable = createResizeObservable(element, { box: 'content-box' });
+ * using observable = createResizeObservable(element, { box: 'content-box' });
  * observable.addEventListener('resize', (e) => {
  *   console.log(e.detail.width, e.detail.height);
  * });
- * // Cleanup:
- * observable.disconnect();
  * ```
  */
 
@@ -38,10 +38,28 @@ export interface CreateResizeObservableOptions {
 }
 
 /** Framework-agnostic resize observable with EventTarget-based dispatching. */
-export interface ResizeObservable extends EventTarget {
+export interface ResizeObservable extends EventTarget, Disposable {
   /** Stop observing and clean up resources. */
   disconnect(): void;
 }
+
+/**
+ * Extract the first size entry for the given box model.
+ * @internal
+ */
+const extractBoxSize = (
+  entry: ResizeObserverEntry,
+  box: ResizeObserverBoxOptions,
+): ResizeObserverSize | undefined => {
+  switch (box) {
+    case 'border-box':
+      return entry.borderBoxSize[0];
+    case 'device-pixel-content-box':
+      return (entry.devicePixelContentBoxSize ?? entry.contentBoxSize)[0];
+    default:
+      return entry.contentBoxSize[0];
+  }
+};
 
 /**
  * Create a framework-agnostic resize observable for an element.
@@ -62,12 +80,7 @@ export const createResizeObservable = (
 
   const observer = new ResizeObserver((entries) => {
     for (const entry of entries) {
-      const [sizeEntry] =
-        box === 'border-box'
-          ? entry.borderBoxSize
-          : box === 'device-pixel-content-box'
-            ? (entry.devicePixelContentBoxSize ?? entry.contentBoxSize)
-            : entry.contentBoxSize;
+      const sizeEntry = extractBoxSize(entry, box);
 
       const detail: ResizeEventDetail = {
         width: sizeEntry?.inlineSize ?? 0,
@@ -81,11 +94,14 @@ export const createResizeObservable = (
 
   observer.observe(target, { box });
 
-  const observable: ResizeObservable = Object.assign(eventTarget, {
-    disconnect: (): void => {
-      observer.disconnect();
+  const disconnect = (): void => {
+    observer.disconnect();
+  };
+
+  return Object.assign(eventTarget, {
+    disconnect,
+    [Symbol.dispose](): void {
+      disconnect();
     },
   });
-
-  return observable;
 };

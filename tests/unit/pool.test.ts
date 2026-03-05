@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { ObserverPool, getSharedPool } from '../../src/pool.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getSharedPool, ObserverPool } from '../../src/pool.js';
 
 describe('ObserverPool', () => {
   let pool: ObserverPool;
@@ -67,12 +67,20 @@ describe('ObserverPool', () => {
     expect(pool.observedCount).toBe(1);
   });
 
-  it('should implement Symbol.dispose', () => {
+  it('should implement Symbol.dispose and reset count', () => {
     const el = document.createElement('div');
     pool.observe(el, {}, vi.fn());
     pool[Symbol.dispose]();
-    // After dispose, pool is disconnected
-    expect(pool.observedCount).toBe(1); // Count not reset, but observer is disconnected
+    // After dispose, pool is disconnected and count is reset
+    expect(pool.observedCount).toBe(0);
+  });
+
+  it('should support ES2026 using declaration pattern', () => {
+    using disposablePool = new ObserverPool();
+    const el = document.createElement('div');
+    disposablePool.observe(el, {}, vi.fn());
+    expect(disposablePool.observedCount).toBe(1);
+    // Pool is disposed when block exits
   });
 });
 

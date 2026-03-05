@@ -3,9 +3,17 @@
   "vcs": {
     "enabled": true,
     "clientKind": "git",
-    "useIgnoreFile": true
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
   },
-  "organizeImports": { "enabled": true },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
@@ -17,10 +25,7 @@
       },
       "style": {
         "useConst": "error",
-        "noVar": "error",
-        "useTemplate": "error",
-        "useNullishCoalescing": "error",
-        "useOptionalChain": "error"
+        "useTemplate": "error"
       },
       "performance": {
         "noDelete": "error",
@@ -31,7 +36,6 @@
         "noDoubleEquals": "error"
       },
       "complexity": {
-        "noBannedTypes": "error",
         "noExcessiveCognitiveComplexity": {
           "level": "warn",
           "options": { "maxAllowedComplexity": 10 }
@@ -52,5 +56,27 @@
       "trailingCommas": "all",
       "semicolons": "always"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["*.config.ts", "*.config.js"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDefaultExport": "off"
+          }
+        }
+      }
+    }
+  ]
 }

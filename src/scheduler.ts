@@ -8,10 +8,10 @@ import type { ResizeCallback } from './types.js';
  * Per-frame flush entry — snapshot of callbacks + latest entry for one element.
  * @internal
  */
-type FlushEntry = {
+interface FlushEntry {
   readonly callbacks: ReadonlySet<ResizeCallback>;
   readonly entry: ResizeObserverEntry;
-};
+}
 
 /**
  * Batching scheduler that coalesces all ResizeObserver callbacks into a single
@@ -21,6 +21,8 @@ type FlushEntry = {
  * Uses a `Map<Element, FlushEntry>` with last-write-wins semantics so that
  * 100 simultaneous resize events produce exactly 1 React render cycle.
  *
+ * Implements `Disposable` for ES2026 `using` declarations.
+ *
  * @internal
  */
 export class RafScheduler implements Disposable {
@@ -28,7 +30,7 @@ export class RafScheduler implements Disposable {
   #rafId: number | null = null;
 
   /** Enqueue a resize observation for the next rAF flush. */
-  schedule(target: Element, entry: ResizeObserverEntry, cbs: Set<ResizeCallback>): void {
+  schedule(target: Element, entry: ResizeObserverEntry, cbs: ReadonlySet<ResizeCallback>): void {
     this.#queue.set(target, { callbacks: cbs, entry });
     this.#requestFlush();
   }
@@ -42,6 +44,7 @@ export class RafScheduler implements Disposable {
   }
 
   #flush(): void {
+    // Snapshot and clear before dispatching to avoid re-entrant mutations
     const snapshot = new Map(this.#queue);
     this.#queue.clear();
 

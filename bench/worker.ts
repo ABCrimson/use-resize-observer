@@ -1,5 +1,5 @@
 import { Bench } from 'tinybench';
-import { allocateSlot, releaseSlot, MAX_ELEMENTS } from '../src/worker/protocol.js';
+import { allocateSlot, MAX_ELEMENTS, releaseSlot } from '../src/worker/protocol.js';
 
 const bench = new Bench({
   time: 1000,

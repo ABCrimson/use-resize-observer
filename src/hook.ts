@@ -12,25 +12,25 @@ import type {
 
 /**
  * Extract width/height from a ResizeObserverEntry based on the selected box model.
+ * Uses destructuring with fallback for Safari's missing `devicePixelContentBoxSize`.
  * @internal
  */
 const extractDimensions = (
   entry: ResizeObserverEntry,
   box: ResizeObserverBoxOptions,
-): { width: number; height: number } => {
+): { readonly width: number; readonly height: number } => {
   switch (box) {
     case 'border-box': {
-      const [bs] = entry.borderBoxSize;
-      return { width: bs?.inlineSize ?? 0, height: bs?.blockSize ?? 0 };
+      const size = entry.borderBoxSize[0];
+      return { width: size?.inlineSize ?? 0, height: size?.blockSize ?? 0 };
     }
     case 'device-pixel-content-box': {
-      const [dpcs] = entry.devicePixelContentBoxSize ?? entry.contentBoxSize;
-      return { width: dpcs?.inlineSize ?? 0, height: dpcs?.blockSize ?? 0 };
+      const size = (entry.devicePixelContentBoxSize ?? entry.contentBoxSize)[0];
+      return { width: size?.inlineSize ?? 0, height: size?.blockSize ?? 0 };
     }
-    case 'content-box':
     default: {
-      const [cs] = entry.contentBoxSize;
-      return { width: cs?.inlineSize ?? 0, height: cs?.blockSize ?? 0 };
+      const size = entry.contentBoxSize[0];
+      return { width: size?.inlineSize ?? 0, height: size?.blockSize ?? 0 };
     }
   }
 };
@@ -42,7 +42,7 @@ const extractDimensions = (
  * - Single shared `ResizeObserver` per document root (pool architecture)
  * - `requestAnimationFrame` batching with `startTransition` wrapping
  * - GC-backed cleanup via `FinalizationRegistry`
- * - React 19 Compiler-safe (stable callback identity)
+ * - React Compiler-safe (stable callback identity via ref pattern)
  * - Sub-300B gzip bundle contribution
  *
  * @param options - Configuration options.
@@ -67,7 +67,7 @@ export const useResizeObserver = <T extends Element = Element>(
   const [entry, setEntry] = useState<ResizeObserverEntry | undefined>(undefined);
 
   // Stable callback ref — survives re-renders without triggering re-observation.
-  // React 19's useEffectEvent semantics: latest closure captured, identity stable.
+  // Follows useEffectEvent semantics: latest closure captured, identity stable.
   const onResizeRef = useRef(onResize);
   onResizeRef.current = onResize;
 
@@ -90,13 +90,12 @@ export const useResizeObserver = <T extends Element = Element>(
       onResizeRef.current?.(resizeEntry);
     };
 
-    const observerOptions: ResizeObserverOptions = { box: currentBox };
-    pool.observe(element, observerOptions, callback);
+    pool.observe(element, { box: currentBox }, callback);
 
     return () => {
       pool.unobserve(element, callback);
     };
-  }, [targetRef, box, root]);
+  }, [targetRef, root]);
 
   return { ref: targetRef, width, height, entry };
 };

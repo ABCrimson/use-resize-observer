@@ -1,5 +1,5 @@
 // Mock ResizeObserver for happy-dom environment
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 class MockResizeObserver implements ResizeObserver {
   readonly #callback: ResizeObserverCallback;
@@ -33,10 +33,17 @@ class MockResizeObserver implements ResizeObserver {
     return {
       target,
       contentRect: new DOMRectReadOnly(0, 0, width, height),
-      borderBoxSize: [{ inlineSize: width, blockSize: height }] as unknown as ReadonlyArray<ResizeObserverSize>,
-      contentBoxSize: [{ inlineSize: width, blockSize: height }] as unknown as ReadonlyArray<ResizeObserverSize>,
+      borderBoxSize: [
+        { inlineSize: width, blockSize: height },
+      ] as unknown as ReadonlyArray<ResizeObserverSize>,
+      contentBoxSize: [
+        { inlineSize: width, blockSize: height },
+      ] as unknown as ReadonlyArray<ResizeObserverSize>,
       devicePixelContentBoxSize: [
-        { inlineSize: width * (globalThis.devicePixelRatio ?? 1), blockSize: height * (globalThis.devicePixelRatio ?? 1) },
+        {
+          inlineSize: width * (globalThis.devicePixelRatio ?? 1),
+          blockSize: height * (globalThis.devicePixelRatio ?? 1),
+        },
       ] as unknown as ReadonlyArray<ResizeObserverSize>,
     };
   }
@@ -74,4 +81,13 @@ globalThis.cancelAnimationFrame = vi.fn((id: number): void => {
 
 beforeEach(() => {
   rafCallbacks = [];
+});
+
+// Mock React startTransition for unit tests
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>();
+  return {
+    ...actual,
+    startTransition: (fn: () => void) => fn(),
+  };
 });

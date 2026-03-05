@@ -41,4 +41,17 @@ describe('createResizeObserver', () => {
     expect(factory).toBeDefined();
     factory.disconnect();
   });
+
+  it('should implement Symbol.dispose (ES2026)', () => {
+    const factory = createResizeObserver();
+    expect(typeof factory[Symbol.dispose]).toBe('function');
+    factory[Symbol.dispose]();
+  });
+
+  it('should support using declaration pattern', () => {
+    using factory = createResizeObserver();
+    const el = document.createElement('div');
+    factory.observe(el, vi.fn());
+    // Factory disconnects when block exits
+  });
 });
