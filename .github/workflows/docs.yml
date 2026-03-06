@@ -24,9 +24,8 @@ jobs:
         with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with: { node-version: '25', cache: 'npm' }
-      - run: npm ci
-      - run: npm run build
-      - run: npm run docs:build
+      - run: npm ci --legacy-peer-deps
+      - run: npx vitepress build docs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/.vitepress/dist
