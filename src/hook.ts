@@ -26,7 +26,7 @@ interface ObserverState {
  * - `requestAnimationFrame` batching with `startTransition` wrapping
  * - GC-backed cleanup via `FinalizationRegistry`
  * - React Compiler-safe (stable callback identity via ref pattern)
- * - Sub-300B gzip bundle contribution
+ * - Sub-1.1 kB gzip bundle contribution
  *
  * @param options - Configuration options.
  * @returns Ref, width, height, and raw entry.

@@ -4,7 +4,8 @@
 
 | Version | Supported          |
 |---------|-------------------|
-| 0.2.x   | ✅ Current         |
+| 0.3.x   | ✅ Current         |
+| 0.2.x   | ⚠️ Security fixes only |
 | 0.1.x   | ⚠️ Security fixes only |
 | < 0.1   | ❌ Not supported   |
 

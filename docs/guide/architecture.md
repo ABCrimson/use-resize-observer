@@ -193,4 +193,4 @@ The `SharedArrayBuffer` is divided into slots, one per observed element. The mai
 
 - [Performance](/guide/performance) -- Benchmark data proving the architecture's benefits
 - [Worker Mode](/guide/worker) -- Deep dive into the off-main-thread architecture
-- [Bundle Size](/guide/bundle-size) -- How tree-shaking keeps the core under 300B
+- [Bundle Size](/guide/bundle-size) -- How tree-shaking keeps the main entry at 1.04 kB

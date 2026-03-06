@@ -2,7 +2,7 @@
 .VPNav.VPNav {
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  background: oklch(13% 0.02 var(--crimson-hue) / 0.85);
+  background: var(--c-nav-bg);
   border-bottom: 1px solid var(--c-border-soft);
 }
 
@@ -18,8 +18,8 @@
 
 /* ─── Sidebar ─── */
 .VPSidebar {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
 }
 
 .VPSidebarItem .text {
@@ -141,7 +141,10 @@
   border-radius: var(--radius-md);
   font-weight: 600;
   letter-spacing: -0.01em;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 8px oklch(52% 0.26 var(--crimson-hue) / 0.3);
 }
 
@@ -155,7 +158,10 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--c-border);
   font-weight: 500;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .VPButton.alt:hover {
@@ -173,11 +179,11 @@
 .VPLocalSearchBox .shell {
   border-radius: var(--radius-lg);
   border: 1px solid var(--c-border);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
-/* ─── Scrollbar ─── */
+/* ─── Scrollbar (Webkit) ─── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -194,6 +200,12 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(52% 0.26 var(--crimson-hue) / 0.4);
+}
+
+/* ─── Scrollbar (Firefox / standards) ─── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(52% 0.26 var(--crimson-hue) / 0.2) transparent;
 }
 
 /* ─── Selection ─── */
@@ -223,4 +235,10 @@
 
 .VPFeatures .items {
   gap: 16px;
+}
+
+/* ─── Focus-visible for keyboard navigation ─── */
+:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
 }

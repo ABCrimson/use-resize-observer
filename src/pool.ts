@@ -95,6 +95,9 @@ export const getSharedPool = (root: Document | ShadowRoot): ObserverPool => {
   const existing = poolRegistry.get(root);
   if (existing) return existing;
 
+  // Fire-and-forget: validates ResizeObserver availability asynchronously.
+  // Errors surface via console.error, not thrown to caller (sync return path).
+  //
   // Promise.try() (ES2026) — safely wraps synchronous pool creation in a
   // microtask-aware context, catching any constructor exceptions into a
   // rejected promise for diagnostics while returning synchronously.

@@ -29,7 +29,7 @@ export const roundToDevicePixel = (cssPixels: number, dpr: number): number => {
  * @param values - Array of numbers to sum.
  * @returns The precise sum.
  */
-export const sumPrecise = (values: number[]): number => {
+export const sumPrecise = (values: readonly number[]): number => {
   if (typeof Math.sumPrecise === 'function') {
     return Math.sumPrecise(values);
   }
@@ -48,10 +48,8 @@ export const sumPrecise = (values: number[]): number => {
  * @param dpr - The device pixel ratio (window.devicePixelRatio).
  * @returns The normalized CSS pixel value.
  */
-export const normalizeDimension = (cssPixels: number, dpr: number): number => {
-  const devicePixels = Math.round(cssPixels * dpr);
-  return devicePixels / dpr;
-};
+export const normalizeDimension = (cssPixels: number, dpr: number): number =>
+  roundToDevicePixel(cssPixels, dpr);
 
 /**
  * Attempt to load the WASM rounding module.

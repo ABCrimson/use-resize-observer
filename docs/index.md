@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "@crimson_dev/use-resize-observer"
   text: "Zero-dependency React 19 ResizeObserver hook"
-  tagline: "ESNext-first. Worker-native. Sub-300B gzip. React Compiler-safe."
+  tagline: "ESNext-first. Worker-native. < 1.1kB gzip. React Compiler-safe."
   actions:
     - theme: brand
       text: Get Started
@@ -18,8 +18,8 @@ hero:
 
 features:
   - icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    title: Sub-300B gzip
-    details: The main hook entry compiles to less than 300 bytes min+gzip. Zero runtime dependencies.
+    title: "< 1.1kB gzip"
+    details: "Full main entry with pool, scheduler, and hook — just 1.04 kB gzip. Core entry: 363B. Zero runtime dependencies."
 
   - icon: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
     title: Worker-Native

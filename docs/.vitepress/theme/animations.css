@@ -1,3 +1,4 @@
+/* ─── Mesh gradient hue drift (animates @property --crimson-hue) ─── */
 @keyframes mesh-drift {
   0% {
     --crimson-hue: 11;
@@ -13,6 +14,7 @@
   }
 }
 
+/* ─── Glow pulse (animates @property --glow-opacity) ─── */
 @keyframes glow-pulse {
   0%,
   100% {
@@ -23,6 +25,7 @@
   }
 }
 
+/* ─── Float-up entrance (GPU-composited: transform + opacity only) ─── */
 @keyframes float-up {
   from {
     opacity: 0;
@@ -34,26 +37,27 @@
   }
 }
 
+/* ─── Shimmer (GPU-composited: uses translate instead of background-position) ─── */
 @keyframes shimmer {
   0% {
-    background-position: -200% 0;
+    transform: translateX(-100%);
   }
   100% {
-    background-position: 200% 0;
+    transform: translateX(100%);
   }
 }
 
-/* Hero gradient background */
+/* ─── Hero gradient background ─── */
 .hero-gradient {
   background:
     radial-gradient(ellipse 80% 60% at 20% 40%, var(--g-stop-1) 0%, transparent 60%),
     radial-gradient(ellipse 60% 80% at 80% 60%, var(--g-stop-2) 0%, transparent 60%),
     radial-gradient(ellipse 70% 50% at 50% 20%, var(--g-stop-3) 0%, transparent 60%);
   animation: mesh-drift 12s ease-in-out infinite;
-  will-change: background;
+  will-change: --crimson-hue;
 }
 
-/* Hero section glow effect */
+/* ─── Hero section glow text ─── */
 .VPHero .name {
   background: linear-gradient(
     135deg,
@@ -66,29 +70,37 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* ─── Hero staggered entrance (GPU-composited) ─── */
 .VPHero .text {
   animation: float-up 0.6s ease-out both;
   animation-delay: 0.1s;
+  will-change: transform, opacity;
 }
 
 .VPHero .tagline {
   animation: float-up 0.6s ease-out both;
   animation-delay: 0.2s;
+  will-change: transform, opacity;
 }
 
 .VPHero .actions {
   animation: float-up 0.6s ease-out both;
   animation-delay: 0.35s;
+  will-change: transform, opacity;
 }
 
-/* Feature cards entrance */
+/* ─── Feature cards entrance ─── */
 .VPFeatures .VPFeature {
   animation: float-up 0.5s ease-out both;
   border: 1px solid var(--c-border-soft);
   border-radius: var(--radius-lg);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  will-change: transform, opacity;
 }
 
 .VPFeatures .VPFeature::before {
@@ -135,25 +147,39 @@
   animation-delay: 0.3s;
 }
 
-/* Feature icon styling */
+/* ─── Feature icon styling ─── */
 .VPFeature .icon {
   color: var(--c-primary);
 }
 
+/* ─── Reduced motion: disable ALL animations and transitions ─── */
 @media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .hero-gradient,
   .VPHero .text,
   .VPHero .tagline,
   .VPHero .actions,
   .VPFeatures .VPFeature {
     animation: none;
+    will-change: auto;
   }
-  .VPFeatures .VPFeature:hover {
+
+  .VPFeatures .VPFeature:hover,
+  .VPButton.brand:hover,
+  .VPButton.alt:hover {
     transform: none;
   }
 }
 
-/* View transition names for smooth page navigation */
+/* ─── View Transition API names for smooth page navigation ─── */
 .VPContent {
   view-transition-name: main-content;
 }
@@ -162,22 +188,32 @@
   view-transition-name: navigation;
 }
 
-/* GPU-composited bar chart animations for visualizer */
+.VPSidebar {
+  view-transition-name: sidebar;
+}
+
+/* ─── GPU-composited bar chart animations for visualizer ─── */
 .resize-bar {
   will-change: transform;
   transition: transform 0.1s ease-out;
 }
 
-/* Content visibility for long API pages */
+/* ─── Content visibility for off-screen optimization ─── */
 .vp-doc .api-section {
   content-visibility: auto;
   contain-intrinsic-size: 0 500px;
 }
 
-/* Smooth opacity transitions */
+.VPDocFooter {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 200px;
+}
+
+/* ─── Smooth opacity transitions (GPU-composited) ─── */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
+  will-change: opacity;
 }
 
 .fade-enter-from,

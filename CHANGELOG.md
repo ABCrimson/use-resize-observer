@@ -5,6 +5,32 @@ All notable changes to `@crimson_dev/use-resize-observer` will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-05
+
+### Added
+- OKLCH theme hardening: `@property` definitions, `:root:not(.dark)` light mode, `--c-nav-bg` token
+- Typography: `text-wrap: balance` on headings, `text-wrap: pretty` on paragraphs, h5/h6 styles
+- Accessibility: universal `prefers-reduced-motion` reset, `:focus-visible` keyboard navigation style
+- GPU optimization: compositor-only shimmer animation, explicit `will-change` on animated elements
+- Firefox scrollbar styling (`scrollbar-width: thin`)
+- `content-visibility: auto` on footer for off-screen optimization
+- `view-transition-name: sidebar` for page navigation transitions
+
+### Changed
+- All "Sub-300B" size claims corrected to actual 1.04 kB across homepage, README, bundle-size guide, blog, contributing, architecture, and troubleshooting docs
+- `src/shim/wasm-round.ts`: `sumPrecise` param now `readonly number[]`; `normalizeDimension` delegates to `roundToDevicePixel` (removes duplication)
+- `src/pool.ts`: clarifying comment on fire-and-forget `Promise.try()` pattern
+- SVG diagrams optimized via SVGO 4: 24-33% size reduction with `prefers-reduced-motion` preserved
+- All `transition: all` replaced with explicit property lists across theme CSS
+- Nav/sidebar/search backdrop-filter enhanced with `saturate()` for richer visual effect
+- Theme animations: `will-change: background` replaced with `will-change: --crimson-hue` (compositor-friendly)
+
+### Fixed
+- Visualizer demo page: replaced incomplete `<script setup>` stub with proper info block
+- Homepage tagline: "Sub-300B gzip" corrected to "< 1.1kB gzip"
+- 8 documentation pages with stale size claims corrected
+- Light mode theme not applying (was using `@media prefers-color-scheme` instead of VitePress `.dark` class toggle)
+
 ## [0.2.0] - 2026-03-05
 
 ### Added
@@ -75,6 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stable callback identity via ref pattern (React Compiler safe)
 - Worker mode: SharedArrayBuffer + Float16Array + Atomics for off-main-thread
 
+[0.3.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.2.0
 [0.1.1]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.1.1
 [0.1.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.1.0

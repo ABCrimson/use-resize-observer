@@ -243,12 +243,12 @@ Worker mode requires `Float16Array`. Ensure your runtime supports it:
 
 If `Float16Array` is not available, worker mode automatically falls back to `Float32Array`.
 
-## Bundle Size Exceeds 300B
+## Bundle Size Larger Than Expected
 
 **Cause:** Importing from the wrong entry point or importing worker/server code alongside the main hook.
 
 ```typescript
-// CORRECT: tree-shakeable import (< 300B)
+// CORRECT: tree-shakeable import (1.04 kB gzip)
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 ```
 

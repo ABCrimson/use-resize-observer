@@ -26,7 +26,7 @@ Most ResizeObserver hooks in the ecosystem share these shortcomings:
 |---------|---------------|--------------|
 | Observer instances | 1 per hook | 1 shared pool |
 | Render batching | None | rAF + startTransition |
-| Bundle size | ~1.2KB gzip | < 300B gzip |
+| Bundle size | ~1.2KB gzip | 1.04 kB gzip |
 | Module format | CJS + ESM | ESM only |
 | Worker support | None | SharedArrayBuffer + Float16Array |
 | React version | 16.8+ | 19.3+ |

@@ -10,6 +10,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
+## [0.3.0] - 2026-03-05
+
+### Added
+- OKLCH theme hardening: `@property` definitions, light mode fix, nav background token
+- Typography: `text-wrap: balance/pretty`, h5/h6 styles, font fallback improvements
+- Accessibility: universal `prefers-reduced-motion` reset, `:focus-visible` styles
+- GPU optimization: compositor-only animations, explicit `will-change`, `content-visibility: auto`
+- Firefox scrollbar styling, `view-transition-name: sidebar`
+
+### Changed
+- All "Sub-300B" size claims corrected to actual 1.04 kB across all docs
+- `src/shim/wasm-round.ts`: `readonly` param, removed duplication
+- SVG diagrams optimized via SVGO 4 (24-33% reduction)
+- Theme CSS: explicit transition properties, enhanced backdrop-filter
+
+### Fixed
+- Visualizer demo page stub replaced with proper info block
+- Homepage tagline corrected to "< 1.1kB gzip"
+- Light mode theme not applying (VitePress class toggle vs media query)
+- 8 documentation pages with stale size claims
+
 ## [0.2.0] - 2026-03-05
 
 ### Added
@@ -58,7 +79,7 @@ See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blo
 - TypeScript 6 strict mode (`isolatedDeclarations`, `erasableSyntaxOnly`, `exactOptionalPropertyTypes`)
 - VitePress 2.0.0-alpha.16 documentation site with OKLCH theme
 - Comprehensive test suite (Vitest 4.1.0-beta.5, unit + browser)
-- Size-limit 12.0.0 bundle size enforcement (< 300B core)
+- Size-limit 12.0.0 bundle size enforcement (1.04 kB main entry)
 - Biome 2.4.5 linting and formatting
 - tsdown 0.21.0-beta.5 build system with Rolldown 1.x
 - Changeset-based release pipeline with npm provenance

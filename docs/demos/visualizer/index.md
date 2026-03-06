@@ -10,20 +10,15 @@ An interactive demo showing `@crimson_dev/use-resize-observer` in action with re
 
 Drag the bottom-right corner of the box below to resize it. The bar chart updates in real time using GPU-composited CSS `transform: scaleX()` animations.
 
-<script setup>
-// VitePress 2 client-side island component
-// The ResizeVisualizer is imported as a Vue/React component island
-</script>
+::: info Live Demo
+This demo requires a running VitePress dev server with React islands. Start the dev server to see the interactive visualizer:
 
-::: tip Interactive
-The element below has `resize: both` CSS -- drag the handle to see real-time dimension tracking.
+```bash
+npm run docs:dev
+```
+
+The visualizer component source is at [`docs/.vitepress/theme/components/ResizeVisualizer.tsx`](https://github.com/ABCrimson/use-resize-observer/blob/main/docs/.vitepress/theme/components/ResizeVisualizer.tsx).
 :::
-
-<div style="resize: both; overflow: auto; min-width: 200px; min-height: 150px; max-width: 100%; padding: 24px; border: 2px dashed oklch(52% 0.26 11 / 0.3); border-radius: 12px; background: oklch(17% 0.02 11); font-family: 'Geist Mono', monospace; color: oklch(94% 0.01 11);">
-  Resize this element to see the observer in action.
-  <br /><br />
-  In the full app, a React component renders here with live bar charts and an FPS counter.
-</div>
 
 ## Features Demonstrated
 
