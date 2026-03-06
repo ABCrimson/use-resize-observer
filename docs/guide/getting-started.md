@@ -32,7 +32,7 @@ const MyComponent = () => {
 
 | Feature | Value |
 |---------|-------|
-| Bundle size | 1.12 kB min+gzip |
+| Bundle size | 1.11 kB min+gzip |
 | Runtime dependencies | 0 |
 | React version | >= 19.3.0 |
 | Module format | ESM only |

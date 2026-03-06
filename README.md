@@ -52,7 +52,7 @@ Most resize hooks create **one `ResizeObserver` per component**. At scale, that 
 ## Highlights
 
 <table>
-<tr><td>📦</td><td><strong>1.12 kB</strong> gzip &middot; zero dependencies</td></tr>
+<tr><td>📦</td><td><strong>1.11 kB</strong> gzip &middot; zero dependencies</td></tr>
 <tr><td>⚡</td><td>Shared <code>ResizeObserver</code> pool &middot; rAF batching &middot; <code>startTransition</code></td></tr>
 <tr><td>🧵</td><td>Worker mode via <code>SharedArrayBuffer</code> + <code>Float16Array</code></td></tr>
 <tr><td>🎯</td><td>All 3 box models: <code>content-box</code>, <code>border-box</code>, <code>device-pixel-content-box</code></td></tr>
@@ -155,7 +155,7 @@ observer.observe(element, (entry) => console.log(entry));
 
 | | `use-resize-observer@9` | `@crimson_dev/use-resize-observer` |
 |---|---|---|
-| Bundle | ~800B | **1.12 kB** (pool + scheduler + hook) |
+| Bundle | ~800B | **1.11 kB** (pool + scheduler + hook) |
 | React | 16.8+ | **19.3+** with Compiler |
 | Module | CJS + ESM | **ESM only** |
 | TypeScript | 4.x | **6.0 strict** |

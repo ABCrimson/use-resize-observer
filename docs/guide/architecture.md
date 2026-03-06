@@ -201,4 +201,4 @@ The `SharedArrayBuffer` (3,072 bytes) is divided into two regions: bytes 0--1023
 
 - [Performance](/guide/performance) -- Benchmark data proving the architecture's benefits
 - [Worker Mode](/guide/worker) -- Deep dive into SAB-based measurement sharing
-- [Bundle Size](/guide/bundle-size) -- How tree-shaking keeps the main entry at 1.12 kB
+- [Bundle Size](/guide/bundle-size) -- How tree-shaking keeps the main entry at 1.11 kB

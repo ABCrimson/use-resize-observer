@@ -74,11 +74,11 @@ Bundle size is enforced by [size-limit 12.0.0](https://github.com/ai/size-limit)
 
 | Entry | Limit |
 |-------|-------|
-| Main (`useResizeObserver`) | 1.12 kB gzip |
-| Worker | 1.21 kB gzip |
-| Core | 350 B gzip |
+| Main (`useResizeObserver`) | 1.11 kB gzip |
+| Worker | 1.17 kB gzip |
+| Core | 330 B gzip |
 | Server | 114 B gzip |
-| Shim | 537 B gzip |
+| Shim | 530 B gzip |
 
 ```bash
 npm run size
