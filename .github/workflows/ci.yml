@@ -21,7 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run typecheck:ts7
+      - run: npx tsgo --noEmit --skipLibCheck
       - run: npm run build
       - run: npx publint
 
