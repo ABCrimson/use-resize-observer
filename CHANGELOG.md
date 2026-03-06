@@ -5,6 +5,29 @@ All notable changes to `@crimson_dev/use-resize-observer` will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-03-06
+
+### Added
+- CI matrix expanded to 3 OS: ubuntu-latest, windows-latest, macos-latest
+- Socket Security scanning on pull requests (`socket-security/socket-security-action@v1`)
+- `npm audit --omit=dev` security gate in CI and release workflows
+- Lighthouse CI auditing on docs deployment (performance budgets enforced)
+- VitePress sitemap generation for SEO
+- `robots.txt` for search engine crawling
+- `npm pack --dry-run` and `npx publint` verification in release workflow
+- Complete release checklist in CONTRIBUTING.md
+- `homepage`, `bugs`, and `funding` fields in package.json
+
+### Changed
+- ES2026/TS6 modernization across all 10 source files:
+  - Nullish coalescing (`??`) replaces verbose ternary null checks
+  - Optional chaining (`?.`) replaces explicit undefined guards
+  - Template literals replace string concatenation
+  - Typed tuple eliminates non-null assertions in scheduler
+  - Set iterator `.next()` eliminates non-null assertion in pool demotion
+- Bundle sizes decreased: main 1.11 kB, worker 1.17 kB, core 330 B, shim 530 B
+- TypeScript 7 native preview (`tsgo`) verification in CI quality job
+
 ## [0.5.0] - 2026-03-06
 
 ### Breaking Changes

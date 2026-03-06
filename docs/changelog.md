@@ -10,6 +10,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
+## [0.8.0] - 2026-03-06
+
+### Added
+- CI matrix expanded to 3 OS (ubuntu, windows, macos)
+- Socket Security scanning on PRs
+- `npm audit --omit=dev` gate in CI and release
+- Lighthouse CI on docs deployment
+- VitePress sitemap, robots.txt for SEO
+- Release workflow hardened with publint + pack verification
+- Complete release checklist in CONTRIBUTING.md
+- Package metadata: `homepage`, `bugs`, `funding`
+
+### Changed
+- ES2026/TS6 modernization: nullish coalescing, optional chaining, template literals, typed tuples
+- Bundle sizes decreased: main 1.11 kB, worker 1.17 kB, core 330 B, shim 530 B
+
 ## [0.5.0] - 2026-03-06
 
 ### Breaking Changes
