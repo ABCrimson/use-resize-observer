@@ -31,7 +31,19 @@ describe('Box model options (browser)', () => {
     expect(getByTestId('box-test')).toBeDefined();
   });
 
-  it('should render with device-pixel-content-box', () => {
+  it.skipIf(
+    (() => {
+      try {
+        const ro = new ResizeObserver(() => {});
+        const el = document.createElement('div');
+        ro.observe(el, { box: 'device-pixel-content-box' });
+        ro.disconnect();
+        return false;
+      } catch {
+        return true;
+      }
+    })(),
+  )('should render with device-pixel-content-box', () => {
     const { getByTestId } = render(<BoxModelComponent box="device-pixel-content-box" />);
     expect(getByTestId('box-test')).toBeDefined();
   });
