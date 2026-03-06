@@ -47,7 +47,8 @@ export const useResizeObserverEntries = (
   boxRef.current = box;
 
   useEffect(() => {
-    const cleanups: Array<() => void> = [];
+    // Track observed pairs for cleanup — avoids separate closure array
+    const observed: Array<readonly [Element, ResizeCallback]> = [];
 
     for (const ref of refs) {
       const element = ref.current;
@@ -72,12 +73,13 @@ export const useResizeObserverEntries = (
       };
 
       pool.observe(element, { box: currentBox }, callback);
-      cleanups.push(() => pool.unobserve(element, callback));
+      observed.push([element, callback] as const);
     }
 
     return () => {
-      for (const cleanup of cleanups) {
-        cleanup();
+      for (const [element, callback] of observed) {
+        const observerRoot = root ?? element.ownerDocument;
+        getSharedPool(observerRoot).unobserve(element, callback);
       }
     };
   }, [refs, root]);

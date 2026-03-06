@@ -89,19 +89,15 @@ export const readSlot = (
 
 /**
  * Allocate a slot from the bitmap tracker.
- * Scans for the first unallocated slot in O(n) worst case.
+ * Uses `Int32Array.prototype.indexOf()` for fast native-code scan.
  *
  * @param bitmap - Int32Array tracking allocated slots (1 = in use).
  * @returns The allocated slot index, or -1 if all slots are in use.
  */
 export const allocateSlot = (bitmap: Int32Array): number => {
-  for (let i = 0; i < MAX_ELEMENTS; i++) {
-    if (bitmap[i] === 0) {
-      bitmap[i] = 1;
-      return i;
-    }
-  }
-  return -1;
+  const i = bitmap.indexOf(0);
+  if (i !== -1) bitmap[i] = 1;
+  return i;
 };
 
 /**

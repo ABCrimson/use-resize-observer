@@ -17,7 +17,9 @@ export default defineConfig({
   treeshake: true,
   target: 'esnext',
   platform: 'browser',
-  external: ['react', 'react-dom'],
+  deps: {
+    neverBundle: ['react', 'react-dom'],
+  },
   define: {
     'import.meta.env.VERSION': JSON.stringify(process.env['npm_package_version'] ?? '0.0.0'),
   },

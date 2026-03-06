@@ -5,6 +5,16 @@ All notable changes to `@crimson_dev/use-resize-observer` will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-03-06
+
+### Changed
+- Dependency upgrades: Biome 2.4.6, tsdown 0.21.0 (stable), Vitest 4.1.0-beta.6, @vitejs/plugin-react 5.1.4, Playwright 1.59.0-alpha-2026-03-06, publint 0.3.18
+- `core.ts`: Replaced `Object.assign(EventTarget)` with proper `ResizeObservableImpl` class extending `EventTarget` — eliminates runtime overhead, cleaner prototype chain
+- `hook-multi.ts`: Replaced closure-based cleanup array with tuple tracking `[Element, ResizeCallback]` — avoids intermediate closure allocation per ref
+- `worker/hook.ts`: Combined separate `width`/`height` `useState` into single state object — batches into 1 render instead of 2 per frame
+- `worker/protocol.ts`: Replaced manual `for` loop in `allocateSlot` with `Int32Array.prototype.indexOf()` — delegates to native code for faster slot scanning
+- Biome schema updated to 2.4.6
+
 ## [0.4.0] - 2026-03-06
 
 ### Added
@@ -122,6 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stable callback identity via ref pattern (React Compiler safe)
 - Worker mode: SharedArrayBuffer + Float16Array + Atomics for off-main-thread
 
+[0.4.1]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.4.1
 [0.4.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.2.0

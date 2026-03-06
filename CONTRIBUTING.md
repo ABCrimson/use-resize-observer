@@ -33,7 +33,7 @@ npm run docs:dev
 
 ### Code Style
 
-This project uses [Biome 2.4.5](https://biomejs.dev/) as the sole linting and formatting tool. No ESLint, no Prettier.
+This project uses [Biome 2.4.6](https://biomejs.dev/) as the sole linting and formatting tool. No ESLint, no Prettier.
 
 ```bash
 # Check for issues

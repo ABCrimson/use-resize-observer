@@ -45,6 +45,39 @@ export interface ResizeObservable extends EventTarget, Disposable {
 }
 
 /**
+ * Concrete implementation: extends EventTarget directly for zero-overhead
+ * event dispatching, avoiding Object.assign runtime cost.
+ * @internal
+ */
+class ResizeObservableImpl extends EventTarget implements ResizeObservable {
+  readonly #observer: ResizeObserver;
+
+  constructor(target: Element, box: ResizeObserverBoxOptions) {
+    super();
+    this.#observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const sizeEntry = extractBoxSize(entry, box);
+        const detail: ResizeEventDetail = {
+          width: sizeEntry?.inlineSize ?? 0,
+          height: sizeEntry?.blockSize ?? 0,
+          entry,
+        };
+        this.dispatchEvent(new ResizeEvent(detail));
+      }
+    });
+    this.#observer.observe(target, { box });
+  }
+
+  disconnect(): void {
+    this.#observer.disconnect();
+  }
+
+  [Symbol.dispose](): void {
+    this.disconnect();
+  }
+}
+
+/**
  * Create a framework-agnostic resize observable for an element.
  *
  * Wraps a `ResizeObserver` with `EventTarget` dispatching — consumers
@@ -59,32 +92,5 @@ export const createResizeObservable = (
   options: CreateResizeObservableOptions = {},
 ): ResizeObservable => {
   const { box = 'content-box' } = options;
-  const eventTarget = new EventTarget();
-
-  const observer = new ResizeObserver((entries) => {
-    for (const entry of entries) {
-      const sizeEntry = extractBoxSize(entry, box);
-
-      const detail: ResizeEventDetail = {
-        width: sizeEntry?.inlineSize ?? 0,
-        height: sizeEntry?.blockSize ?? 0,
-        entry,
-      };
-
-      eventTarget.dispatchEvent(new ResizeEvent(detail));
-    }
-  });
-
-  observer.observe(target, { box });
-
-  const disconnect = (): void => {
-    observer.disconnect();
-  };
-
-  return Object.assign(eventTarget, {
-    disconnect,
-    [Symbol.dispose](): void {
-      disconnect();
-    },
-  });
+  return new ResizeObservableImpl(target, box);
 };

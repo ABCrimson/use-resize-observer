@@ -10,6 +10,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
+## [0.4.1] - 2026-03-06
+
+### Changed
+- Dependency upgrades: Biome 2.4.6, tsdown 0.21.0 (stable), Vitest 4.1.0-beta.6, @vitejs/plugin-react 5.1.4, Playwright 1.59.0-alpha-2026-03-06, publint 0.3.18
+- `core.ts`: Proper `EventTarget` subclass replaces `Object.assign` pattern
+- `hook-multi.ts`: Tuple-based cleanup tracking replaces closure array
+- `worker/hook.ts`: Single-object state batching replaces dual `useState`
+- `worker/protocol.ts`: Native `indexOf` replaces manual loop in slot allocation
+- Biome schema updated to 2.4.6
+
 ## [0.4.0] - 2026-03-06
 
 ### Added

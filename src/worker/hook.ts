@@ -111,8 +111,9 @@ export const useResizeObserverWorker = <T extends Element = Element>(
   const internalRef = useRef<T | null>(null);
   const targetRef = externalRef ?? internalRef;
 
-  const [width, setWidth] = useState<number | undefined>(undefined);
-  const [height, setHeight] = useState<number | undefined>(undefined);
+  const [state, setState] = useState<
+    { readonly width: number; readonly height: number } | undefined
+  >(undefined);
 
   const onResizeRef = useRef(onResize);
   onResizeRef.current = onResize;
@@ -120,6 +121,7 @@ export const useResizeObserverWorker = <T extends Element = Element>(
   const boxRef = useRef(box);
   boxRef.current = box;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: box intentionally in deps to re-subscribe on box model change
   useEffect(() => {
     const element = targetRef.current;
     if (!element) return;
@@ -147,8 +149,7 @@ export const useResizeObserverWorker = <T extends Element = Element>(
         const useBorder = boxRef.current === 'border-box';
         const w = useBorder ? slot.borderWidth : slot.width;
         const h = useBorder ? slot.borderHeight : slot.height;
-        setWidth(w);
-        setHeight(h);
+        setState({ width: w, height: h });
         onResizeRef.current?.({ width: w, height: h });
         rafId = requestAnimationFrame(poll);
       };
@@ -189,5 +190,5 @@ export const useResizeObserverWorker = <T extends Element = Element>(
     };
   }, [targetRef, box]);
 
-  return { ref: targetRef, width, height, entry: undefined };
+  return { ref: targetRef, width: state?.width, height: state?.height, entry: undefined };
 };
