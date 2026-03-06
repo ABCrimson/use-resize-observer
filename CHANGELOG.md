@@ -5,6 +5,22 @@ All notable changes to `@crimson_dev/use-resize-observer` will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-03-06
+
+### Highlights
+- First stable release of `@crimson_dev/use-resize-observer`
+- 100% test coverage across 9/10 source files (159 tests, 16 suites)
+- Complete documentation polish with accurate bundle sizes
+
+### Changed
+- Test coverage pushed to near-100%: context, hook, hook-multi, factory, shim all at 100%
+- 8 new tests covering custom constructor context, custom root, empty size arrays, shim auto-install
+- All documentation updated with accurate bundle sizes (main 1.11 kB, worker 1.17 kB, core 330 B, shim 530 B)
+- README, CONTRIBUTING, all docs guides, and wiki synchronized
+
+### Known Coverage Gaps
+- `pool.ts` at 91%: FinalizationRegistry GC callback (untestable) and defensive dead code (unreachable Set size===0 branch)
+
 ## [0.8.0] - 2026-03-06
 
 ### Added

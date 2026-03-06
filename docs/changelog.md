@@ -10,6 +10,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
+## [1.0.0] - 2026-03-06
+
+### Highlights
+- First stable release
+- 100% coverage across 9/10 source files (159 tests)
+- All documentation updated with accurate bundle sizes
+
+### Changed
+- 8 new tests for custom context, root, empty sizes, shim install
+- Bundle sizes updated everywhere: main 1.11 kB, worker 1.17 kB, core 330 B, shim 530 B
+
 ## [0.8.0] - 2026-03-06
 
 ### Added
