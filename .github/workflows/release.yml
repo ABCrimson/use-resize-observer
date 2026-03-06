@@ -24,7 +24,7 @@ jobs:
           node-version: '25'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - run: npm run build
       - run: npm run test -- --project unit
       - run: npm run size
