@@ -15,6 +15,14 @@
     "type": "git",
     "url": "git+https://github.com/ABCrimson/use-resize-observer.git"
   },
+  "homepage": "https://abcrimson.github.io/use-resize-observer/",
+  "bugs": {
+    "url": "https://github.com/ABCrimson/use-resize-observer/issues"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/ABCrimson"
+  },
   "keywords": [
     "react",
     "hook",

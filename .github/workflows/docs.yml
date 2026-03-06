@@ -41,3 +41,18 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  lighthouse:
+    name: Lighthouse Audit
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            https://abcrimson.github.io/use-resize-observer/
+            https://abcrimson.github.io/use-resize-observer/guide/getting-started
+            https://abcrimson.github.io/use-resize-observer/api/
+          budgetPath: '.github/lighthouse-budget.json'
+          uploadArtifacts: true

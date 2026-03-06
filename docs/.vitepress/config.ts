@@ -33,6 +33,10 @@ export default defineConfig({
   lastUpdated: true,
   cleanUrls: true,
 
+  sitemap: {
+    hostname: 'https://abcrimson.github.io/use-resize-observer/',
+  },
+
   markdown: {
     theme: {
       dark: 'github-dark-dimmed',

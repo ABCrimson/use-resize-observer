@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://abcrimson.github.io/use-resize-observer/sitemap.xml

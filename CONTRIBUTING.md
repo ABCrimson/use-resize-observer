@@ -123,16 +123,35 @@ npx changeset
 
 ## Release Process
 
-Releases are automated via [Changesets](https://github.com/changesets/changesets):
+### Automated (CI)
 
-1. PRs include changeset entries describing the change
-2. On merge to `main`, the release workflow runs
-3. `changeset version` bumps versions and updates CHANGELOG
-4. `changeset publish --provenance` publishes to npm with provenance
+The release workflow (`.github/workflows/release.yml`) triggers on `v*` tag pushes:
 
-### NPM Token
+1. `npm audit --omit=dev` — security gate
+2. `npm run build` — build all entries
+3. `npm run test -- --project unit` — run unit tests
+4. `npm run size` — verify bundle size limits
+5. `npx publint` — verify package exports
+6. `npm pack --dry-run` — verify file inclusions
+7. `npm publish --provenance --access public` — publish with provenance
 
-The `NPM_TOKEN` secret must be configured in the repository settings for automated publishing.
+### Manual Release Checklist
+
+For every new release, complete ALL of the following:
+
+- [ ] Update `version` in `package.json`
+- [ ] Update version in `docs/.vitepress/config.ts` nav
+- [ ] Update `CHANGELOG.md` (root) with new entry
+- [ ] Update `docs/changelog.md` (VitePress) with new entry
+- [ ] Update `.github/SECURITY.md` supported versions table
+- [ ] Update `docs/api/index.md` if API changed
+- [ ] Update `README.md` if features/sizes changed
+- [ ] Commit: `git commit -m "feat: release vX.Y.Z — <summary>"`
+- [ ] Tag: `git tag vX.Y.Z && git push origin main vX.Y.Z`
+- [ ] Verify: `gh run watch` — release workflow succeeds
+- [ ] Create GitHub release: `gh release create vX.Y.Z --generate-notes`
+- [ ] Update GitHub Wiki `Home.md` version (clone `use-resize-observer.wiki.git`)
+- [ ] Verify: `npm info @crimson_dev/use-resize-observer` shows new version
 
 ## Documentation
 

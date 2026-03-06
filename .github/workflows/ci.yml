@@ -12,8 +12,12 @@ concurrency:
 
 jobs:
   quality:
-    name: Lint & Type-check
-    runs-on: ubuntu-latest
+    name: Lint & Type-check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -26,9 +30,13 @@ jobs:
       - run: npx publint
 
   test-unit:
-    name: Unit Tests
-    runs-on: ubuntu-latest
+    name: Unit Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -37,7 +45,7 @@ jobs:
       - run: npm run build
       - run: npm run test -- --project unit --coverage
       - uses: codecov/codecov-action@v5
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
 
   test-browser:
     name: Browser Tests — ${{ matrix.browser }}
@@ -72,4 +80,25 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-  # Release is handled by .github/workflows/release.yml
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '25', cache: 'npm' }
+      - run: npm ci
+      - run: npm audit --omit=dev
+
+  socket:
+    name: Socket Security
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: socket-security/socket-security-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
