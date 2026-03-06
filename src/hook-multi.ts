@@ -3,6 +3,7 @@
 import type { RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
+import { extractBoxSize } from './extract.js';
 import { getSharedPool } from './pool.js';
 import type { ResizeCallback, ResizeObserverBoxOptions } from './types.js';
 
@@ -20,24 +21,6 @@ export interface UseResizeObserverEntriesOptions {
   /** Document or ShadowRoot scoping the pool. @default document */
   root?: Document | ShadowRoot;
 }
-
-/**
- * Extract the first size entry for the given box model.
- * @internal
- */
-const extractSize = (
-  entry: ResizeObserverEntry,
-  box: ResizeObserverBoxOptions,
-): ResizeObserverSize | undefined => {
-  switch (box) {
-    case 'border-box':
-      return entry.borderBoxSize[0];
-    case 'device-pixel-content-box':
-      return (entry.devicePixelContentBoxSize ?? entry.contentBoxSize)[0];
-    default:
-      return entry.contentBoxSize[0];
-  }
-};
 
 /**
  * Multi-element variant: observe multiple elements simultaneously through
@@ -75,7 +58,7 @@ export const useResizeObserverEntries = (
       const currentBox = boxRef.current;
 
       const callback: ResizeCallback = (resizeEntry) => {
-        const sizeEntry = extractSize(resizeEntry, currentBox);
+        const sizeEntry = extractBoxSize(resizeEntry, currentBox);
 
         setEntries((prev) => {
           const next = new Map(prev);

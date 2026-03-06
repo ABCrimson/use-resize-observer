@@ -92,13 +92,7 @@ describe('RafScheduler', () => {
     expect(cb).not.toHaveBeenCalled();
   });
 
-  it('should implement Symbol.dispose', () => {
-    expect(typeof scheduler[Symbol.dispose]).toBe('function');
-    scheduler[Symbol.dispose]();
-  });
-
-  it('should support ES2026 using declaration pattern', () => {
-    using disposableScheduler = createScheduler();
+  it('should implement Symbol.dispose and cancel pending work', () => {
     const el = document.createElement('div');
     const cb = vi.fn();
     const MockRO = (
@@ -107,7 +101,33 @@ describe('RafScheduler', () => {
         { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }
       >
     ).MockResizeObserver;
-    disposableScheduler.schedule(el, MockRO.createEntry(el, 50, 25), new Set([cb]));
-    // Scheduler is disposed when block exits — pending callbacks cancelled
+
+    expect(typeof scheduler[Symbol.dispose]).toBe('function');
+    scheduler.schedule(el, MockRO.createEntry(el, 100, 50), new Set([cb]));
+    scheduler[Symbol.dispose]();
+
+    flushRaf();
+    expect(cb).not.toHaveBeenCalled();
+  });
+
+  it('should support ES2026 using declaration pattern', () => {
+    const el = document.createElement('div');
+    const cb = vi.fn();
+    const MockRO = (
+      globalThis as Record<
+        string,
+        { createEntry: (t: Element, w: number, h: number) => ResizeObserverEntry }
+      >
+    ).MockResizeObserver;
+
+    {
+      using disposableScheduler = createScheduler();
+      disposableScheduler.schedule(el, MockRO.createEntry(el, 50, 25), new Set([cb]));
+      // Scheduler is disposed when block exits — pending callbacks cancelled
+    }
+
+    // After disposal, flushing rAF should NOT invoke the callback
+    flushRaf();
+    expect(cb).not.toHaveBeenCalled();
   });
 });

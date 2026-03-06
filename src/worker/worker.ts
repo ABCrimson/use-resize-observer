@@ -76,6 +76,3 @@ const handleMessage = (event: MessageEvent<WorkerMessage>): void => {
 };
 
 self.addEventListener('message', handleMessage);
-
-// Signal readiness
-self.postMessage({ op: 'ready' } satisfies WorkerMessage);

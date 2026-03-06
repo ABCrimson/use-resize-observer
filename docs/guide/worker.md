@@ -40,7 +40,7 @@ const MyComponent = () => {
 
 Worker mode requires `crossOriginIsolated === true`, which means your server must send these headers:
 
-```
+```text
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
@@ -187,7 +187,7 @@ Float16 has limited precision for very large values. Elements wider than 2,048 C
 
 All hook instances using the same `workerObserver` share a **single Worker instance**:
 
-```
+```text
 100 components with useResizeObserver({ observer: workerObserver })
   --> 1 Worker
   --> 1 SharedArrayBuffer

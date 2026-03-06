@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { extractDimensions } from './extract.js';
 import { getSharedPool } from './pool.js';
 import type {
   ResizeCallback,
@@ -10,30 +11,12 @@ import type {
   UseResizeObserverResult,
 } from './types.js';
 
-/**
- * Extract width/height from a ResizeObserverEntry based on the selected box model.
- * Uses destructuring with fallback for Safari's missing `devicePixelContentBoxSize`.
- * @internal
- */
-const extractDimensions = (
-  entry: ResizeObserverEntry,
-  box: ResizeObserverBoxOptions,
-): { readonly width: number; readonly height: number } => {
-  switch (box) {
-    case 'border-box': {
-      const size = entry.borderBoxSize[0];
-      return { width: size?.inlineSize ?? 0, height: size?.blockSize ?? 0 };
-    }
-    case 'device-pixel-content-box': {
-      const size = (entry.devicePixelContentBoxSize ?? entry.contentBoxSize)[0];
-      return { width: size?.inlineSize ?? 0, height: size?.blockSize ?? 0 };
-    }
-    default: {
-      const size = entry.contentBoxSize[0];
-      return { width: size?.inlineSize ?? 0, height: size?.blockSize ?? 0 };
-    }
-  }
-};
+/** Internal state shape — single object to batch width+height+entry in one setState. */
+interface ObserverState {
+  readonly width: number;
+  readonly height: number;
+  readonly entry: ResizeObserverEntry;
+}
 
 /**
  * Primary React hook for observing element resize events.
@@ -62,9 +45,7 @@ export const useResizeObserver = <T extends Element = Element>(
   const internalRef = useRef<T | null>(null);
   const targetRef = externalRef ?? internalRef;
 
-  const [width, setWidth] = useState<number | undefined>(undefined);
-  const [height, setHeight] = useState<number | undefined>(undefined);
-  const [entry, setEntry] = useState<ResizeObserverEntry | undefined>(undefined);
+  const [state, setState] = useState<ObserverState | undefined>(undefined);
 
   // Stable callback ref — survives re-renders without triggering re-observation.
   // Follows useEffectEvent semantics: latest closure captured, identity stable.
@@ -83,9 +64,7 @@ export const useResizeObserver = <T extends Element = Element>(
 
     const callback: ResizeCallback = (resizeEntry) => {
       const { width: w, height: h } = extractDimensions(resizeEntry, boxRef.current);
-      setWidth(w);
-      setHeight(h);
-      setEntry(resizeEntry);
+      setState({ width: w, height: h, entry: resizeEntry });
       onResizeRef.current?.(resizeEntry);
     };
 
@@ -96,7 +75,12 @@ export const useResizeObserver = <T extends Element = Element>(
     };
   }, [targetRef, box, root]);
 
-  return { ref: targetRef, width, height, entry };
+  return {
+    ref: targetRef,
+    width: state?.width,
+    height: state?.height,
+    entry: state?.entry,
+  };
 };
 
 export type { ResizeObserverBoxOptions, UseResizeObserverOptions, UseResizeObserverResult };

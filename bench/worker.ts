@@ -14,10 +14,7 @@ bench.add('Slot allocation throughput', () => {
 
 bench.add('Slot allocation — fill and release 256 slots', () => {
   const bitmap = new Int32Array(MAX_ELEMENTS);
-  const slots: number[] = [];
-  for (let i = 0; i < MAX_ELEMENTS; i++) {
-    slots.push(allocateSlot(bitmap));
-  }
+  const slots: readonly number[] = Array.from({ length: MAX_ELEMENTS }, () => allocateSlot(bitmap));
   for (const slot of slots) {
     releaseSlot(bitmap, slot);
   }

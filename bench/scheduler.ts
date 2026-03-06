@@ -26,22 +26,23 @@ const createMockEntry = (target: Element): ResizeObserverEntry =>
     devicePixelContentBoxSize: [{ inlineSize: 200, blockSize: 100 }],
   }) as unknown as ResizeObserverEntry;
 
+/** Shared singleton callback set — avoids allocation per schedule call. */
+const singleCbSet: ReadonlySet<() => void> = new Set([() => {}]);
+
 bench.add('RafScheduler — schedule 100 elements', () => {
-  const scheduler = new RafScheduler();
+  using scheduler = new RafScheduler();
   for (let i = 0; i < 100; i++) {
     const el = {} as Element;
-    scheduler.schedule(el, createMockEntry(el), new Set([() => {}]));
+    scheduler.schedule(el, createMockEntry(el), singleCbSet);
   }
-  scheduler[Symbol.dispose]();
 });
 
 bench.add('RafScheduler — schedule 1000 elements', () => {
-  const scheduler = new RafScheduler();
+  using scheduler = new RafScheduler();
   for (let i = 0; i < 1000; i++) {
     const el = {} as Element;
-    scheduler.schedule(el, createMockEntry(el), new Set([() => {}]));
+    scheduler.schedule(el, createMockEntry(el), singleCbSet);
   }
-  scheduler[Symbol.dispose]();
 });
 
 await bench.run();

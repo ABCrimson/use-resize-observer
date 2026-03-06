@@ -15,6 +15,7 @@
  * ```
  */
 
+import { extractBoxSize } from './extract.js';
 import type { ResizeObserverBoxOptions } from './types.js';
 
 /** Detail payload for resize events dispatched by the observable. */
@@ -42,24 +43,6 @@ export interface ResizeObservable extends EventTarget, Disposable {
   /** Stop observing and clean up resources. */
   disconnect(): void;
 }
-
-/**
- * Extract the first size entry for the given box model.
- * @internal
- */
-const extractBoxSize = (
-  entry: ResizeObserverEntry,
-  box: ResizeObserverBoxOptions,
-): ResizeObserverSize | undefined => {
-  switch (box) {
-    case 'border-box':
-      return entry.borderBoxSize[0];
-    case 'device-pixel-content-box':
-      return (entry.devicePixelContentBoxSize ?? entry.contentBoxSize)[0];
-    default:
-      return entry.contentBoxSize[0];
-  }
-};
 
 /**
  * Create a framework-agnostic resize observable for an element.

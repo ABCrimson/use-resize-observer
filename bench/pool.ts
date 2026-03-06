@@ -19,47 +19,45 @@ globalThis.cancelAnimationFrame = () => {};
 
 const { ObserverPool } = await import('../src/pool.js');
 
+/** Shared empty options object — avoids allocation per iteration. */
+const emptyOpts: ResizeObserverOptions = {};
+
 const bench = new Bench({
   time: 1000,
   warmupTime: 500,
 });
 
 bench.add('ObserverPool.observe() throughput', () => {
-  const pool = new ObserverPool();
+  using pool = new ObserverPool();
   const el = { ownerDocument: {} } as unknown as Element;
   const cb = () => {};
-  pool.observe(el, {}, cb);
+  pool.observe(el, emptyOpts, cb);
   pool.unobserve(el, cb);
-  pool[Symbol.dispose]();
 });
 
 bench.add('ObserverPool.unobserve() throughput', () => {
-  const pool = new ObserverPool();
+  using pool = new ObserverPool();
   const el = { ownerDocument: {} } as unknown as Element;
   const cb = () => {};
-  pool.observe(el, {}, cb);
+  pool.observe(el, emptyOpts, cb);
   pool.unobserve(el, cb);
-  pool[Symbol.dispose]();
 });
 
 bench.add('ObserverPool — 100 elements observe/unobserve cycle', () => {
-  const pool = new ObserverPool();
-  const elements: Element[] = [];
-  const callbacks: Array<() => void> = [];
+  using pool = new ObserverPool();
+  const elements: readonly Element[] = Array.from(
+    { length: 100 },
+    () => ({ ownerDocument: {} }) as unknown as Element,
+  );
+  const callbacks: readonly (() => void)[] = Array.from({ length: 100 }, () => () => {});
 
   for (let i = 0; i < 100; i++) {
-    const el = { ownerDocument: {} } as unknown as Element;
-    const cb = () => {};
-    elements.push(el);
-    callbacks.push(cb);
-    pool.observe(el, {}, cb);
+    pool.observe(elements[i]!, emptyOpts, callbacks[i]!);
   }
 
-  for (let i = 0; i < 100; i++) {
-    pool.unobserve(elements[i]!, callbacks[i]!);
+  for (const [i, el] of elements.entries()) {
+    pool.unobserve(el, callbacks[i]!);
   }
-
-  pool[Symbol.dispose]();
 });
 
 await bench.run();

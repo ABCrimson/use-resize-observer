@@ -1,6 +1,6 @@
 {
   "name": "@crimson_dev/use-resize-observer",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Zero-dependency, Worker-native, ESNext-first React 19 ResizeObserver hook",
   "type": "module",
   "sideEffects": false,
@@ -80,6 +80,7 @@
     "@vitest/browser-playwright": "4.1.0-beta.5",
     "@vitest/coverage-v8": "4.1.0-beta.5",
     "@vitest/ui": "4.1.0-beta.5",
+    "babel-plugin-react-compiler": "^0.0.0-experimental-1371fcb-20260304",
     "concurrently": "9.2.1",
     "happy-dom": "20.8.3",
     "playwright": "1.59.0-alpha-2026-03-05",

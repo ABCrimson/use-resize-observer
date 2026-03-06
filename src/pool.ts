@@ -106,7 +106,7 @@ export const getSharedPool = (root: Document | ShadowRoot): ObserverPool => {
       );
     }
   }).catch((error: unknown) => {
-    console.error(error);
+    console.error(Error.isError(error) ? error : new Error(String(error)));
   });
 
   const pool = new ObserverPool();

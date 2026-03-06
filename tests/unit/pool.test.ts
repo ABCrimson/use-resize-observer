@@ -97,4 +97,33 @@ describe('getSharedPool', () => {
     const pool2 = getSharedPool(shadow);
     expect(pool1).not.toBe(pool2);
   });
+
+  it('should handle getSharedPool when ResizeObserver is undefined', async () => {
+    const originalRO = globalThis.ResizeObserver;
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    Object.defineProperty(globalThis, 'ResizeObserver', {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+
+    const mockRoot = document.implementation.createHTMLDocument();
+
+    // getSharedPool triggers Promise.try error path, but new ObserverPool()
+    // also throws because ResizeObserver is not a constructor
+    expect(() => getSharedPool(mockRoot)).toThrow();
+
+    // Flush the microtask so Promise.try().catch() fires console.error
+    await vi.waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalled();
+    });
+
+    Object.defineProperty(globalThis, 'ResizeObserver', {
+      value: originalRO,
+      writable: true,
+      configurable: true,
+    });
+    consoleSpy.mockRestore();
+  });
 });

@@ -10,6 +10,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
+## [0.2.0] - 2026-03-05
+
+### Added
+- React Compiler compatibility verified with `babel-plugin-react-compiler`
+- Compiler integration test suite under React Compiler transformation
+- Shared `extractDimensions` / `extractBoxSize` module for consistent dimension extraction
+- Coverage thresholds raised to 95%+ (97.65% statements, 90.8% branches)
+
+### Changed
+- Full ES2026 modernization audit — `Error.isError()`, `readonly` params, `using` in benchmarks
+- Test suite hardened with stronger assertions and `findObserverFor` pattern
+- 97 total tests (94 unit + 3 compiler)
+
+### Fixed
+- Architecture, box model, performance, and troubleshooting docs corrected for accuracy
+- Code block language tags and Mermaid diagram accuracy
+
 ## [0.1.1] - 2026-03-06
 
 ### Fixed
@@ -43,7 +60,7 @@ See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blo
 - Comprehensive test suite (Vitest 4.1.0-beta.5, unit + browser)
 - Size-limit 12.0.0 bundle size enforcement (< 300B core)
 - Biome 2.4.5 linting and formatting
-- tsdown 0.21.0-beta.5 build system with Rolldown 2.x
+- tsdown 0.21.0-beta.5 build system with Rolldown 1.x
 - Changeset-based release pipeline with npm provenance
 - GitHub Actions CI/CD with full browser matrix (Chrome, Firefox, WebKit)
 

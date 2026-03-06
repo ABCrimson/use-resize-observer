@@ -158,7 +158,10 @@ export const useResizeObserverWorker = <T extends Element = Element>(
         startPolling();
       })
       .catch((error: unknown) => {
-        console.error('[@crimson_dev/use-resize-observer/worker] Init failed:', error);
+        console.error(
+          '[@crimson_dev/use-resize-observer/worker] Init failed:',
+          Error.isError(error) ? error : new Error(String(error)),
+        );
       });
 
     return () => {

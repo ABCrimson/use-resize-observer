@@ -21,7 +21,7 @@ class ResizeObserverShim {
   readonly #callback: ResizeObserverCallback;
   readonly #targets = new Set<Element>();
   #rafId: number | null = null;
-  readonly #lastSizes = new WeakMap<Element, { width: number; height: number }>();
+  readonly #lastSizes = new WeakMap<Element, { readonly width: number; readonly height: number }>();
 
   constructor(callback: ResizeObserverCallback) {
     this.#callback = callback;
@@ -101,7 +101,7 @@ class ResizeObserverShim {
  * @param values - Array of numbers to sum precisely.
  * @returns The precise sum.
  */
-export const sumPrecise = (values: number[]): number => {
+export const sumPrecise = (values: readonly number[]): number => {
   if (typeof Math.sumPrecise === 'function') {
     return Math.sumPrecise(values);
   }

@@ -38,7 +38,10 @@ describe('createResizeObserver', () => {
 
   it('should accept box option', () => {
     const factory = createResizeObserver({ box: 'border-box' });
-    expect(factory).toBeDefined();
+    expect(typeof factory.observe).toBe('function');
+    expect(typeof factory.unobserve).toBe('function');
+    expect(typeof factory.disconnect).toBe('function');
+    expect(typeof factory[Symbol.dispose]).toBe('function');
     factory.disconnect();
   });
 
@@ -46,6 +49,29 @@ describe('createResizeObserver', () => {
     const factory = createResizeObserver();
     expect(typeof factory[Symbol.dispose]).toBe('function');
     factory[Symbol.dispose]();
+  });
+
+  it('should handle unobserve for non-tracked element gracefully', () => {
+    const factory = createResizeObserver();
+    const el = document.createElement('div');
+    const cb = vi.fn();
+
+    // Unobserve without prior observe
+    factory.unobserve(el, cb);
+    factory.disconnect();
+  });
+
+  it('should handle unobserve for tracked element with different callback', () => {
+    const factory = createResizeObserver();
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const cb1 = vi.fn();
+    const cb2 = vi.fn();
+
+    factory.observe(el, cb1);
+    factory.unobserve(el, cb2);
+    factory.disconnect();
+    document.body.removeChild(el);
   });
 
   it('should support using declaration pattern', () => {

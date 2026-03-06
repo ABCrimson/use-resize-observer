@@ -8,6 +8,12 @@ const MockResizeObserver = (globalThis as Record<string, unknown>).MockResizeObs
     triggerResize: (entries: ResizeObserverEntry[]) => void;
     observedTargets: Map<Element, ResizeObserverOptions>;
   }>;
+  findObserverFor: (el: Element) =>
+    | {
+        triggerResize: (entries: ResizeObserverEntry[]) => void;
+        observedTargets: Map<Element, ResizeObserverOptions>;
+      }
+    | undefined;
   createEntry: (target: Element, width: number, height: number) => ResizeObserverEntry;
 };
 
@@ -26,25 +32,17 @@ describe('useResizeObserver', () => {
   });
 
   it('should update dimensions after resize observation', () => {
-    const { result } = renderHook(() => useResizeObserver<HTMLDivElement>());
-
-    // Simulate attaching ref to an element
     const el = document.createElement('div');
     document.body.appendChild(el);
+    const externalRef = { current: el };
 
-    act(() => {
-      (result.current.ref as { current: HTMLDivElement | null }).current = el;
-    });
-
-    // Re-render to trigger useEffect with the new ref value
-    const { result: _result2 } = renderHook(() =>
+    const { result } = renderHook(() =>
       useResizeObserver<HTMLDivElement>({
-        ref: result.current.ref as React.RefObject<HTMLDivElement | null>,
+        ref: externalRef as React.RefObject<HTMLDivElement | null>,
       }),
     );
 
-    // Find the observer and trigger a resize
-    const observer = MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
+    const observer = MockResizeObserver.findObserverFor(el);
     if (observer) {
       const entry = MockResizeObserver.createEntry(el, 320, 240);
       act(() => {
@@ -52,6 +50,10 @@ describe('useResizeObserver', () => {
         flushRaf();
       });
     }
+
+    expect(result.current.width).toBe(320);
+    expect(result.current.height).toBe(240);
+    expect(result.current.entry).toBeDefined();
 
     document.body.removeChild(el);
   });
@@ -79,7 +81,7 @@ describe('useResizeObserver', () => {
       }),
     );
 
-    const observer = MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
+    const observer = MockResizeObserver.findObserverFor(el);
     if (observer) {
       const entry = MockResizeObserver.createEntry(el, 400, 300);
       act(() => {
@@ -88,12 +90,35 @@ describe('useResizeObserver', () => {
       });
     }
 
+    expect(onResize).toHaveBeenCalledOnce();
+    expect(onResize.mock.calls[0]![0].target).toBe(el);
+
     document.body.removeChild(el);
   });
 
-  it('should default to content-box', () => {
-    const { result } = renderHook(() => useResizeObserver<HTMLDivElement>());
-    // Box is internal — verify via the observer being created
-    expect(result.current.width).toBeUndefined();
+  it('should default to content-box dimensions', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const externalRef = { current: el };
+
+    const { result } = renderHook(() =>
+      useResizeObserver<HTMLDivElement>({
+        ref: externalRef as React.RefObject<HTMLDivElement | null>,
+      }),
+    );
+
+    const observer = MockResizeObserver.findObserverFor(el);
+    if (observer) {
+      const entry = MockResizeObserver.createEntry(el, 256, 128);
+      act(() => {
+        observer.triggerResize([entry]);
+        flushRaf();
+      });
+    }
+
+    expect(result.current.width).toBe(256);
+    expect(result.current.height).toBe(128);
+
+    document.body.removeChild(el);
   });
 });

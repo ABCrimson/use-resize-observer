@@ -102,8 +102,11 @@ The key difference from upstream v9 is that even though React 18+ batches `setSt
 The observer pool uses `WeakMap` keyed by DOM elements. When a component unmounts and its DOM element is garbage collected, the WeakMap entry is automatically cleaned up. Additionally, a `FinalizationRegistry` removes any stale observations:
 
 ```typescript
-const registry = new FinalizationRegistry<Element>((element) => {
-  observer.unobserve(element);
+const registry = new FinalizationRegistry<WeakRef<Element>>((ref) => {
+  const element = ref.deref();
+  if (element) {
+    observer.unobserve(element);
+  }
 });
 ```
 

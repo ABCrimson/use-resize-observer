@@ -100,7 +100,7 @@ import { createServerResizeObserverMock } from '@crimson_dev/use-resize-observer
 
 Worker mode requires cross-origin isolation. Ensure your server sends:
 
-```
+```text
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
@@ -132,7 +132,7 @@ See the [Worker Mode](/guide/worker) guide for server configuration examples.
    ```
 
 2. Use `credentialless` instead of `require-corp` (Chrome 96+):
-   ```
+   ```text
    Cross-Origin-Embedder-Policy: credentialless
    ```
 
@@ -187,7 +187,7 @@ npm install typescript@latest
 
 **Cause:** The browser does not support `devicePixelContentBoxSize` (Safari/WebKit).
 
-The hook gracefully falls back to `contentBoxSize` values multiplied by `devicePixelRatio`. This is by design -- check [browser support](https://caniuse.com/mdn-api_resizeobserverentry_devicepixelcontentboxsize) before relying on device-pixel precision.
+The hook gracefully falls back to `contentBoxSize` values (CSS pixels, not device pixels). This is by design -- check [browser support](https://caniuse.com/mdn-api_resizeobserverentry_devicepixelcontentboxsize) before relying on device-pixel precision.
 
 ## React Compiler Issues
 

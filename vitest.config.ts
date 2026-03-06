@@ -29,6 +29,21 @@ export default defineConfig({
           setupFiles: ['tests/setup/unit.ts'],
         },
       },
+      {
+        plugins: [
+          react({
+            babel: {
+              plugins: ['babel-plugin-react-compiler'],
+            },
+          }),
+        ],
+        test: {
+          name: 'compiler',
+          include: ['tests/compiler/**/*.test.tsx'],
+          environment: 'happy-dom',
+          setupFiles: ['tests/setup/unit.ts'],
+        },
+      },
       browserProject('chromium'),
       browserProject('firefox'),
       browserProject('webkit'),
@@ -37,7 +52,7 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.d.ts', 'src/worker/**', 'src/shim/**', 'src/index.ts', 'src/types.ts'],
-      thresholds: { lines: 70, functions: 70, branches: 50, statements: 70 },
+      thresholds: { lines: 95, functions: 95, branches: 85, statements: 95 },
       reporter: ['text', 'lcov', 'html'],
     },
   },

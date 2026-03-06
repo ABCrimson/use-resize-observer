@@ -99,7 +99,7 @@ const CanvasExample = () => {
 ```
 
 ::: warning Browser Support
-`device-pixel-content-box` is supported in Chromium 93+ and Firefox 93+. Safari does not yet support it. The hook will fall back to `content-box` dimensions multiplied by `devicePixelRatio` on unsupported browsers, but this approximation may not account for subpixel rounding differences.
+`device-pixel-content-box` is supported in Chromium 93+ and Firefox 93+. Safari does not yet support it. The hook will fall back to `contentBoxSize` values on unsupported browsers, which report CSS pixels rather than device pixels.
 :::
 
 ### Why device pixels matter for canvas

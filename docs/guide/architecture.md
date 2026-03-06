@@ -50,16 +50,16 @@ sequenceDiagram
     participant RO as ResizeObserver
     participant DOM as Browser Layout
 
-    Hook->>Pool: register(element, callback)
+    Hook->>Pool: observe(element, { box }, callback)
     Pool->>Pool: weakMap.get(element).add(callback)
-    Pool->>RO: observe(element)
+    Pool->>RO: observe(element, { box })
 
     DOM->>RO: layout change detected
     RO->>Pool: callback(entries)
     Pool->>Pool: for each entry, lookup callbacks
     Pool->>Hook: invoke registered callback
 
-    Hook->>Pool: unregister(element, callback)
+    Hook->>Pool: unobserve(element, callback)
     Pool->>Pool: weakMap.get(element).delete(callback)
     alt No more callbacks for element
         Pool->>RO: unobserve(element)
@@ -129,7 +129,7 @@ If you need resize updates to be synchronous (e.g., for canvas rendering that mu
 ```mermaid
 flowchart TD
     MOUNT["useEffect runs"] --> REF{"ref.current\nexists?"}
-    REF -->|yes| REG["pool.register(element, callback, box)"]
+    REF -->|yes| REG["pool.observe(element, { box }, callback)"]
     REF -->|no| WAIT["Wait for ref assignment"]
     WAIT --> REF
     REG --> OBS["ResizeObserver.observe(element, { box })"]
@@ -137,7 +137,7 @@ flowchart TD
 
 ### Unmount
 
-Cleanup uses the `using` declaration pattern (ES2026 Explicit Resource Management):
+Cleanup relies on the `useEffect` cleanup function. The pool's `unobserve` method decrements the callback set and, when no callbacks remain for an element, calls `ResizeObserver.unobserve`:
 
 ```tsx
 // Simplified internal implementation
@@ -145,12 +145,16 @@ useEffect(() => {
   const element = ref.current;
   if (!element) return;
 
-  using subscription = pool.register(element, handleResize, box);
-  // subscription[Symbol.dispose] is called automatically on cleanup
+  const pool = getSharedPool(root ?? element.ownerDocument);
+  pool.observe(element, { box }, callback);
+
+  return () => {
+    pool.unobserve(element, callback);
+  };
 }, [box]);
 ```
 
-The `using` keyword ensures that the subscription is disposed when the effect re-runs or the component unmounts, even if an error occurs during cleanup.
+The cleanup function runs when the effect re-runs or the component unmounts. Additionally, `FinalizationRegistry` acts as a safety net for GC-backed cleanup if the effect cleanup is missed.
 
 ## Memory Layout
 

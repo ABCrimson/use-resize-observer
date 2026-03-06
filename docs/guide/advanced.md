@@ -183,7 +183,7 @@ observable.disconnect();
 
 This is the lowest-level API in the library. It provides:
 
-- The same shared observer pool as the React hook
+- A standalone `ResizeObserver` wrapper with `EventTarget` dispatching
 - `EventTarget` interface for standard event handling
 - No React dependency (can be used in any JS environment)
 
@@ -196,9 +196,8 @@ interface ResizeEventDetail {
   readonly entry: ResizeObserverEntry;
 }
 
-interface ResizeObservable extends EventTarget {
+interface ResizeObservable extends EventTarget, Disposable {
   disconnect(): void;
-  [Symbol.dispose](): void;
 }
 ```
 

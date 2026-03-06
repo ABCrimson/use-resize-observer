@@ -37,7 +37,7 @@ By targeting ES2026, we avoid shipping polyfills or transpilation output for fea
 
 The library is structured as multiple entry points to enable granular tree-shaking:
 
-```
+```text
 @crimson_dev/use-resize-observer       -- core hook only
 @crimson_dev/use-resize-observer/worker -- worker mode
 @crimson_dev/use-resize-observer/server -- SSR/RSC entry
