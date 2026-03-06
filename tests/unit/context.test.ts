@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import React from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { ResizeObserverContext, useResizeObserverConstructor } from '../../src/context.js';
 
 describe('ResizeObserverContext', () => {
@@ -19,5 +20,14 @@ describe('useResizeObserverConstructor', () => {
   it('should return globalThis.ResizeObserver when no provider', () => {
     const { result } = renderHook(() => useResizeObserverConstructor());
     expect(result.current).toBe(globalThis.ResizeObserver);
+  });
+
+  it('should return custom constructor from context', () => {
+    const CustomRO = vi.fn() as unknown as typeof ResizeObserver;
+    const { result } = renderHook(() => useResizeObserverConstructor(), {
+      wrapper: ({ children }) =>
+        React.createElement(ResizeObserverContext.Provider, { value: CustomRO }, children),
+    });
+    expect(result.current).toBe(CustomRO);
   });
 });

@@ -46,6 +46,20 @@ describe('createResizeObserver', () => {
     factory[Symbol.dispose]();
   });
 
+  it('should add multiple callbacks to same element (tracked Set reuse)', () => {
+    using factory = createResizeObserver();
+    const el = document.createElement('div');
+    const cb1 = vi.fn();
+    const cb2 = vi.fn();
+    // First observe creates the Set, second reuses it (hits !cbs false branch)
+    factory.observe(el, cb1);
+    factory.observe(el, cb2);
+    // Both callbacks should be tracked; unobserving one should keep the element
+    factory.unobserve(el, cb1);
+    // cb2 still tracked — element not removed from tracked map
+    factory.unobserve(el, cb2);
+  });
+
   it('should handle unobserve for non-tracked element gracefully', () => {
     using factory = createResizeObserver();
     const el = document.createElement('div');

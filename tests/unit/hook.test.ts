@@ -1,5 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
+import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { ResizeObserverContext } from '../../src/context.js';
 import { useResizeObserver } from '../../src/hook.js';
 
 const flushRaf = (globalThis as Record<string, unknown>).flushRaf as () => void;
@@ -120,5 +122,100 @@ describe('useResizeObserver', () => {
     expect(result.current.height).toBe(128);
 
     document.body.removeChild(el);
+  });
+
+  it('should use custom ResizeObserver from context', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const externalRef = { current: el };
+
+    // Create a genuinely different constructor — a subclass of the mock
+    // so it's !== globalThis.ResizeObserver and triggers the isCustomCtor branch
+    const BaseMock = (globalThis as Record<string, unknown>).MockResizeObserver as {
+      new (cb: ResizeObserverCallback): ResizeObserver;
+    };
+    const CustomRO = class extends BaseMock {} as unknown as typeof ResizeObserver;
+
+    const { result } = renderHook(
+      () =>
+        useResizeObserver<HTMLDivElement>({
+          ref: externalRef as React.RefObject<HTMLDivElement | null>,
+        }),
+      {
+        wrapper: ({ children }) =>
+          React.createElement(ResizeObserverContext.Provider, { value: CustomRO }, children),
+      },
+    );
+
+    // The hook should have observed the element via the custom constructor
+    const observer = findObserverOrThrow(el);
+    const entry = MockResizeObserver.createEntry(el, 500, 300);
+    act(() => {
+      observer.triggerResize([entry]);
+      flushRaf();
+    });
+
+    expect(result.current.width).toBe(500);
+    expect(result.current.height).toBe(300);
+    expect(result.current.ref.current).toBe(el);
+
+    document.body.removeChild(el);
+  });
+
+  it('should handle entries with empty size arrays', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const externalRef = { current: el };
+
+    const { result } = renderHook(() =>
+      useResizeObserver<HTMLDivElement>({
+        ref: externalRef as React.RefObject<HTMLDivElement | null>,
+      }),
+    );
+
+    const observer = findObserverOrThrow(el);
+    // Create an entry with empty size arrays — triggers the ?? 0 fallback
+    const entry = {
+      target: el,
+      contentRect: new DOMRectReadOnly(0, 0, 0, 0),
+      borderBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
+      contentBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
+      devicePixelContentBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
+    } satisfies ResizeObserverEntry;
+    act(() => {
+      observer.triggerResize([entry]);
+      flushRaf();
+    });
+
+    expect(result.current.width).toBe(0);
+    expect(result.current.height).toBe(0);
+    expect(result.current.entry).toBeDefined();
+
+    document.body.removeChild(el);
+  });
+
+  it('should accept a custom root option', () => {
+    const el = document.createElement('div');
+    const shadow = document.createElement('div').attachShadow({ mode: 'open' });
+    shadow.appendChild(el);
+
+    const externalRef = { current: el };
+
+    const { result } = renderHook(() =>
+      useResizeObserver<HTMLDivElement>({
+        ref: externalRef as React.RefObject<HTMLDivElement | null>,
+        root: shadow,
+      }),
+    );
+
+    const observer = findObserverOrThrow(el);
+    const entry = MockResizeObserver.createEntry(el, 400, 200);
+    act(() => {
+      observer.triggerResize([entry]);
+      flushRaf();
+    });
+
+    expect(result.current.width).toBe(400);
+    expect(result.current.height).toBe(200);
   });
 });

@@ -40,6 +40,69 @@ describe('sumPrecise', () => {
   });
 });
 
+describe('shim auto-install', () => {
+  it('should install shim when ResizeObserver is undefined', async () => {
+    const originalRO = globalThis.ResizeObserver;
+    // @ts-expect-error — temporarily remove ResizeObserver
+    globalThis.ResizeObserver = undefined;
+
+    vi.resetModules();
+    const shimModule = await import('../../src/shim.js');
+
+    // Verify shim was installed on globalThis
+    expect(globalThis.ResizeObserver).toBeDefined();
+    expect(shimModule.ResizeObserverShim).toBeDefined();
+
+    // Exercise the re-imported shim class so V8 coverage counts
+    // all methods of the new module copy
+    const Shim = shimModule.ResizeObserverShim;
+    const cb = vi.fn();
+    const shim = new Shim(cb);
+    const el1 = document.createElement('div');
+    const el2 = document.createElement('div');
+    document.body.appendChild(el1);
+    document.body.appendChild(el2);
+
+    vi.spyOn(el1, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, 0, 100, 50));
+    vi.spyOn(el2, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, 0, 200, 100));
+
+    // Temporarily remove devicePixelRatio to hit the ?? 1 fallback (line 63)
+    const originalDpr = globalThis.devicePixelRatio;
+    Object.defineProperty(globalThis, 'devicePixelRatio', {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+
+    shim.observe(el1);
+    shim.observe(el2);
+    flushRaf();
+    expect(cb).toHaveBeenCalledTimes(1);
+
+    // Restore dpr
+    Object.defineProperty(globalThis, 'devicePixelRatio', {
+      value: originalDpr,
+      writable: true,
+      configurable: true,
+    });
+
+    // Unobserve one — still has targets, so #stopPolling not called (false branch line 37)
+    shim.unobserve(el1);
+    // Unobserve last — triggers #stopPolling (true branch line 37)
+    shim.unobserve(el2);
+    shim.disconnect();
+    document.body.removeChild(el1);
+    document.body.removeChild(el2);
+
+    // Restore
+    Object.defineProperty(globalThis, 'ResizeObserver', {
+      value: originalRO,
+      writable: true,
+      configurable: true,
+    });
+  });
+});
+
 describe('ResizeObserverShim', () => {
   it('should be a constructor', () => {
     expect(typeof ResizeObserverShim).toBe('function');
@@ -108,9 +171,9 @@ describe('ResizeObserverShim', () => {
     const lastCall = cb.mock.calls[1]!;
     const entries = lastCall[0] as ReadonlyArray<ResizeObserverEntry>;
     expect(entries).toHaveLength(1);
-    expect(entries[0]!.target).toBe(el);
-    expect(entries[0]!.contentBoxSize[0]!.inlineSize).toBe(200);
-    expect(entries[0]!.borderBoxSize[0]!.inlineSize).toBe(200);
+    expect(entries[0]?.target).toBe(el);
+    expect(entries[0]?.contentBoxSize[0]?.inlineSize).toBe(200);
+    expect(entries[0]?.borderBoxSize[0]?.inlineSize).toBe(200);
 
     shim.disconnect();
     document.body.removeChild(el);
@@ -130,9 +193,9 @@ describe('ResizeObserverShim', () => {
     shim.observe(el);
     flushRaf();
 
-    const entries = cb.mock.calls[0]![0] as ReadonlyArray<ResizeObserverEntry>;
-    expect(entries[0]!.devicePixelContentBoxSize[0]!.inlineSize).toBe(200);
-    expect(entries[0]!.devicePixelContentBoxSize[0]!.blockSize).toBe(100);
+    const entries = cb.mock.calls[0]?.[0] as ReadonlyArray<ResizeObserverEntry>;
+    expect(entries[0]?.devicePixelContentBoxSize[0]?.inlineSize).toBe(200);
+    expect(entries[0]?.devicePixelContentBoxSize[0]?.blockSize).toBe(100);
 
     Object.defineProperty(globalThis, 'devicePixelRatio', {
       value: originalDpr,
@@ -158,7 +221,7 @@ describe('ResizeObserverShim', () => {
 
     flushRaf();
     expect(cb).toHaveBeenCalledTimes(1);
-    const entries = cb.mock.calls[0]![0] as ReadonlyArray<ResizeObserverEntry>;
+    const entries = cb.mock.calls[0]?.[0] as ReadonlyArray<ResizeObserverEntry>;
     expect(entries).toHaveLength(2);
 
     shim.disconnect();

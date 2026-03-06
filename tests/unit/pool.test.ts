@@ -202,6 +202,14 @@ describe('getSharedPool', () => {
     expect(pool1).not.toBe(pool2);
   });
 
+  it('should return a dedicated pool when a custom constructor is provided', () => {
+    const CustomCtor = class extends ResizeObserver {} as unknown as typeof ResizeObserver;
+    const pool1 = getSharedPool(document, CustomCtor);
+    const pool2 = getSharedPool(document, CustomCtor);
+    // Custom constructor: creates non-shared (dedicated) pools each time
+    expect(pool1).not.toBe(pool2);
+  });
+
   it('should handle getSharedPool when ResizeObserver is undefined', async () => {
     const originalRO = globalThis.ResizeObserver;
     using consoleSpy = {

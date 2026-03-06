@@ -1,5 +1,7 @@
 import { act, renderHook } from '@testing-library/react';
+import React from 'react';
 import { describe, expect, it } from 'vitest';
+import { ResizeObserverContext } from '../../src/context.js';
 import { useResizeObserverEntries } from '../../src/hook-multi.js';
 
 const flushRaf = (globalThis as Record<string, unknown>).flushRaf as () => void;
@@ -66,8 +68,8 @@ describe('useResizeObserverEntries', () => {
 
     const el1Result = result.current.get(el1);
     expect(el1Result !== undefined).toBe(true);
-    expect(el1Result!.width).toBe(400);
-    expect(el1Result!.height).toBe(300);
+    expect(el1Result?.width).toBe(400);
+    expect(el1Result?.height).toBe(300);
 
     document.body.removeChild(el1);
     document.body.removeChild(el2);
@@ -96,7 +98,7 @@ describe('useResizeObserverEntries', () => {
     expect(result.current.size).toBe(1);
     const elResult = result.current.get(el);
     expect(elResult !== undefined).toBe(true);
-    expect(elResult!.width).toBe(200);
+    expect(elResult?.width).toBe(200);
 
     document.body.removeChild(el);
   });
@@ -142,8 +144,8 @@ describe('useResizeObserverEntries', () => {
 
     const elResult = result.current.get(el);
     expect(elResult !== undefined).toBe(true);
-    expect(elResult!.width).toBe(0);
-    expect(elResult!.height).toBe(0);
+    expect(elResult?.width).toBe(0);
+    expect(elResult?.height).toBe(0);
 
     document.body.removeChild(el);
   });
@@ -168,7 +170,7 @@ describe('useResizeObserverEntries', () => {
 
     const elResult = result.current.get(el);
     expect(elResult !== undefined).toBe(true);
-    expect(elResult!.width).toBe(500);
+    expect(elResult?.width).toBe(500);
     document.body.removeChild(el);
   });
 
@@ -196,8 +198,8 @@ describe('useResizeObserverEntries', () => {
     // The Map is keyed by element, so both refs resolve to the same entry
     const elResult = result.current.get(el);
     expect(elResult !== undefined).toBe(true);
-    expect(elResult!.width).toBe(600);
-    expect(elResult!.height).toBe(400);
+    expect(elResult?.width).toBe(600);
+    expect(elResult?.height).toBe(400);
     // Only one key in the map since both refs point to the same element
     expect(result.current.size).toBe(1);
 
@@ -227,7 +229,7 @@ describe('useResizeObserverEntries', () => {
       flushRaf();
     });
     expect(result.current.size).toBe(1);
-    expect(result.current.get(el1)!.width).toBe(100);
+    expect(result.current.get(el1)?.width).toBe(100);
 
     // Add second ref
     rerender({
@@ -245,8 +247,8 @@ describe('useResizeObserverEntries', () => {
 
     const el2Result = result.current.get(el2);
     expect(el2Result !== undefined).toBe(true);
-    expect(el2Result!.width).toBe(200);
-    expect(el2Result!.height).toBe(100);
+    expect(el2Result?.width).toBe(200);
+    expect(el2Result?.height).toBe(100);
 
     document.body.removeChild(el1);
     document.body.removeChild(el2);
@@ -309,8 +311,8 @@ describe('useResizeObserverEntries', () => {
 
     const mapAfterFirst = result.current;
 
-    expect(mapAfterFirst.get(el)!.width).toBe(300);
-    expect(mapAfterFirst.get(el)!.height).toBe(200);
+    expect(mapAfterFirst.get(el)?.width).toBe(300);
+    expect(mapAfterFirst.get(el)?.height).toBe(200);
 
     // Trigger same dimensions — setEntries returns prev (identity check)
     act(() => {
@@ -320,6 +322,41 @@ describe('useResizeObserverEntries', () => {
 
     // Map identity should be the same — setState returned prev so React keeps the reference
     expect(result.current).toBe(mapAfterFirst);
+
+    document.body.removeChild(el);
+  });
+
+  it('should use custom ResizeObserver from context', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const ref = { current: el };
+
+    // Create a genuinely different constructor — a subclass of the mock
+    // so it's !== globalThis.ResizeObserver and triggers the ctorArg branch
+    const BaseMock = (globalThis as Record<string, unknown>).MockResizeObserver as {
+      new (cb: ResizeObserverCallback): ResizeObserver;
+    };
+    const CustomRO = class extends BaseMock {} as unknown as typeof ResizeObserver;
+
+    const { result } = renderHook(
+      () => useResizeObserverEntries([ref as React.RefObject<HTMLDivElement | null>]),
+      {
+        wrapper: ({ children }) =>
+          React.createElement(ResizeObserverContext.Provider, { value: CustomRO }, children),
+      },
+    );
+
+    const observer = findObserverOrThrow(el);
+    const entry = MockResizeObserver.createEntry(el, 350, 250);
+    act(() => {
+      observer.triggerResize([entry]);
+      flushRaf();
+    });
+
+    const elResult = result.current.get(el);
+    expect(elResult !== undefined).toBe(true);
+    expect(elResult?.width).toBe(350);
+    expect(elResult?.height).toBe(250);
 
     document.body.removeChild(el);
   });
