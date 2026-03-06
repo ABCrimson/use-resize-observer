@@ -1,10 +1,49 @@
 @keyframes mesh-drift {
-  0% { --crimson-hue: 11; }
-  33% { --crimson-hue: 320; }
-  66% { --crimson-hue: 200; }
-  100% { --crimson-hue: 11; }
+  0% {
+    --crimson-hue: 11;
+  }
+  33% {
+    --crimson-hue: 320;
+  }
+  66% {
+    --crimson-hue: 200;
+  }
+  100% {
+    --crimson-hue: 11;
+  }
 }
 
+@keyframes glow-pulse {
+  0%,
+  100% {
+    --glow-opacity: 0.4;
+  }
+  50% {
+    --glow-opacity: 0.7;
+  }
+}
+
+@keyframes float-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Hero gradient background */
 .hero-gradient {
   background:
     radial-gradient(ellipse 80% 60% at 20% 40%, var(--g-stop-1) 0%, transparent 60%),
@@ -14,9 +53,103 @@
   will-change: background;
 }
 
+/* Hero section glow effect */
+.VPHero .name {
+  background: linear-gradient(
+    135deg,
+    var(--c-primary) 0%,
+    oklch(62% 0.24 var(--crimson-hue)) 40%,
+    var(--c-accent) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.VPHero .text {
+  animation: float-up 0.6s ease-out both;
+  animation-delay: 0.1s;
+}
+
+.VPHero .tagline {
+  animation: float-up 0.6s ease-out both;
+  animation-delay: 0.2s;
+}
+
+.VPHero .actions {
+  animation: float-up 0.6s ease-out both;
+  animation-delay: 0.35s;
+}
+
+/* Feature cards entrance */
+.VPFeatures .VPFeature {
+  animation: float-up 0.5s ease-out both;
+  border: 1px solid var(--c-border-soft);
+  border-radius: var(--radius-lg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.VPFeatures .VPFeature::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    oklch(52% 0.26 var(--crimson-hue) / 0.08) 0%,
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.VPFeatures .VPFeature:hover::before {
+  opacity: 1;
+}
+
+.VPFeatures .VPFeature:hover {
+  border-color: oklch(52% 0.26 var(--crimson-hue) / 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px oklch(52% 0.26 var(--crimson-hue) / 0.1);
+}
+
+.VPFeatures .VPFeature:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.VPFeatures .VPFeature:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.VPFeatures .VPFeature:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.VPFeatures .VPFeature:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.VPFeatures .VPFeature:nth-child(5) {
+  animation-delay: 0.25s;
+}
+.VPFeatures .VPFeature:nth-child(6) {
+  animation-delay: 0.3s;
+}
+
+/* Feature icon styling */
+.VPFeature .icon {
+  color: var(--c-primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hero-gradient {
+  .hero-gradient,
+  .VPHero .text,
+  .VPHero .tagline,
+  .VPHero .actions,
+  .VPFeatures .VPFeature {
     animation: none;
+  }
+  .VPFeatures .VPFeature:hover {
+    transform: none;
   }
 }
 
