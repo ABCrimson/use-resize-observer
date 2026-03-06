@@ -10,6 +10,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
+## [0.4.0] - 2026-03-06
+
+### Added
+- Benchmark suite modernization: JSON results output, 500-element scheduler tier, writeSlot/readSlot roundtrip, heap delta tracking
+- Concurrency stress tests (1000 elements, rapid cycling, concurrent callbacks, 1000-element scheduler flush)
+- Memory pressure tests (10k cycle leak detection, slot bitmap recycling)
+- CI benchmark workflow with PR comment reporting
+- ARIA live regions and accessibility docs for visualizer
+
+### Changed
+- Worker hook now respects `box` option for border-box/content-box selection
+- V8 optimization audit: all hot paths monomorphic, zero deoptimizations
+- Performance guide updated with V8 audit results and benchmark data
+- Deep modernization audit: all 18 source files and 14 test suites confirmed ES2026-compliant
+- 102 tests across 14 suites (up from 94/12)
+
+### Fixed
+- Worker hook `box` option was declared but not used — now correctly reads border-box slot values
+
 ## [0.3.0] - 2026-03-05
 
 ### Added

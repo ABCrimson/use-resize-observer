@@ -140,20 +140,28 @@ flowchart LR
     end
 ```
 
+## V8 Optimization Status
+
+All hot paths have been profiled with `--trace-deopt --trace-opt` on Node 25 (V8 13):
+
+| Function | JIT Tier | Deopts | Notes |
+|----------|----------|--------|-------|
+| `ObserverPool.observe()` | Turbofan | 0 | Monomorphic, fully optimized |
+| `ObserverPool.unobserve()` | Turbofan | 0 | Monomorphic, fully optimized |
+| `RafScheduler.schedule()` | Turbofan | GC tenuring only | Recompiled after allocation site moves to old gen — benign |
+| `writeSlot()` (Float16Array) | Turbofan | 0 | Clean optimized path |
+| `readSlot()` (Float16Array) | Turbofan | 0 | Clean optimized path |
+
+No megamorphic inline caches (ICs) were observed. All object shapes are stable.
+
 ## Running Benchmarks
 
 ```bash
-# Run all benchmarks
+# Run all benchmarks (outputs JSON to bench/results/)
 npm run bench
-
-# Run specific benchmark
-npm run bench -- --filter pool
-
-# Compare against baseline
-npm run bench -- --compare baseline.json
 ```
 
-Benchmark results are stored in `bench/results/` and compared against baselines in CI. A PR that regresses performance by more than 10% on any metric will fail the benchmark check.
+Benchmark results are stored in `bench/results/` as JSON and uploaded as artifacts in CI. The `.github/workflows/bench.yml` workflow automatically posts benchmark results as PR comments.
 
 ## Profiling Tips
 

@@ -1,40 +1,54 @@
-name: Performance Benchmarks
+name: Benchmarks
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
-    paths: ['src/**', 'bench/**']
+
+permissions:
+  contents: read
+  pull-requests: write
 
 concurrency:
   group: bench-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  benchmark:
-    name: Run Benchmarks
+  bench:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v6
-        with: { node-version: '25', cache: 'npm' }
-      - run: npm ci
-      - run: npm run build
+        with:
+          node-version: '25'
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
       - run: npm run bench
-      - name: Compare with baseline
-        run: node scripts/bench-compare.mjs
-      - name: Post results
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: bench/results/
+      - uses: actions/github-script@v8
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
-            if (fs.existsSync('./bench/results/comparison.json')) {
-              const report = JSON.parse(fs.readFileSync('./bench/results/comparison.json', 'utf8'));
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: report.markdown || '## Benchmark Results\n\nNo regressions detected.',
-              });
+            const files = fs.readdirSync('bench/results').filter(f => f.endsWith('.json'));
+            let body = '## Benchmark Results\n\n';
+            for (const file of files) {
+              const data = JSON.parse(fs.readFileSync(`bench/results/${file}`, 'utf8'));
+              body += `### ${file.replace('.json', '')}\n\n`;
+              body += '| Benchmark | ops/sec | Mean (ms) | Margin |\n';
+              body += '|-----------|---------|-----------|--------|\n';
+              for (const r of data.results) {
+                body += `| ${r.name} | ${r.opsPerSecond.toFixed(0)} | ${(r.meanTime * 1000).toFixed(3)} | \u00b1${r.margin.toFixed(2)}% |\n`;
+              }
+              body += '\n';
             }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });

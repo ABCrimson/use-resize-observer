@@ -1,3 +1,4 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { Bench } from 'tinybench';
 
 // Mock for Node environment
@@ -47,12 +48,48 @@ bench.add('Memory — 10000 observe/unobserve cycles', () => {
   }
 });
 
+// Capture heap baseline before benchmark run
+globalThis.gc?.();
+const heapBefore = structuredClone(process.memoryUsage());
+
 await bench.run();
+
+// Capture heap after benchmark run
+globalThis.gc?.();
+const heapAfter = structuredClone(process.memoryUsage());
 
 console.table(bench.table());
 
-// Report heap usage — structuredClone snapshot for consistent reporting
-const mem = structuredClone(process.memoryUsage());
-console.log('\nHeap used:', (mem.heapUsed / 1024 / 1024).toFixed(2), 'MB');
-console.log('Heap total:', (mem.heapTotal / 1024 / 1024).toFixed(2), 'MB');
+// Heap delta tracking
+const heapDelta = heapAfter.heapUsed - heapBefore.heapUsed;
+const heapDeltaMB = heapDelta / 1024 / 1024;
+
+console.log('\nHeap before:', (heapBefore.heapUsed / 1024 / 1024).toFixed(2), 'MB');
+console.log('Heap after:', (heapAfter.heapUsed / 1024 / 1024).toFixed(2), 'MB');
+console.log('Heap delta:', heapDeltaMB.toFixed(4), 'MB');
+console.log('Heap total:', (heapAfter.heapTotal / 1024 / 1024).toFixed(2), 'MB');
+
+if (Math.abs(heapDeltaMB) > 1) {
+  console.warn('WARNING: Heap delta exceeds 1 MB threshold over 10k cycles');
+}
+
+mkdirSync('bench/results', { recursive: true });
+const results = bench.tasks.map((task) => ({
+  name: task.name,
+  opsPerSecond: task.result?.hz ?? 0,
+  meanTime: task.result?.mean ?? 0,
+  margin: task.result?.rme ?? 0,
+}));
+const heapMetrics = {
+  heapBeforeMB: +(heapBefore.heapUsed / 1024 / 1024).toFixed(4),
+  heapAfterMB: +(heapAfter.heapUsed / 1024 / 1024).toFixed(4),
+  heapDeltaMB: +heapDeltaMB.toFixed(4),
+  heapTotalMB: +(heapAfter.heapTotal / 1024 / 1024).toFixed(4),
+  withinThreshold: Math.abs(heapDeltaMB) <= 1,
+} as const;
+writeFileSync(
+  'bench/results/memory.json',
+  JSON.stringify({ timestamp: new Date().toISOString(), results, heapMetrics }, null, 2),
+);
+
 console.log('\n--- Memory Benchmark Complete ---');

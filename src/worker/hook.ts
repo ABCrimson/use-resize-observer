@@ -106,7 +106,7 @@ const terminateWorkerIfIdle = (): void => {
 export const useResizeObserverWorker = <T extends Element = Element>(
   options: UseResizeObserverWorkerOptions<T> = {},
 ): UseResizeObserverResult<T> => {
-  const { ref: externalRef, onResize } = options;
+  const { ref: externalRef, box = 'content-box', onResize } = options;
 
   const internalRef = useRef<T | null>(null);
   const targetRef = externalRef ?? internalRef;
@@ -116,6 +116,9 @@ export const useResizeObserverWorker = <T extends Element = Element>(
 
   const onResizeRef = useRef(onResize);
   onResizeRef.current = onResize;
+
+  const boxRef = useRef(box);
+  boxRef.current = box;
 
   useEffect(() => {
     const element = targetRef.current;
@@ -138,7 +141,12 @@ export const useResizeObserverWorker = <T extends Element = Element>(
       const poll = (): void => {
         if (cancelled || !sharedSab) return;
 
-        const { width: w, height: h } = readSlot(sharedSab, slotId);
+        const slot = readSlot(sharedSab, slotId);
+        // Select dimensions based on box model (device-pixel-content-box
+        // falls back to content-box — no DPCB data in worker protocol)
+        const useBorder = boxRef.current === 'border-box';
+        const w = useBorder ? slot.borderWidth : slot.width;
+        const h = useBorder ? slot.borderHeight : slot.height;
         setWidth(w);
         setHeight(h);
         onResizeRef.current?.({ width: w, height: h });
@@ -179,7 +187,7 @@ export const useResizeObserverWorker = <T extends Element = Element>(
       activeObserverCount--;
       terminateWorkerIfIdle();
     };
-  }, [targetRef]);
+  }, [targetRef, box]);
 
   return { ref: targetRef, width, height, entry: undefined };
 };

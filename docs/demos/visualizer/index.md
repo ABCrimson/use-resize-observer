@@ -148,21 +148,28 @@ const ResizeVisualizer = () => {
 
   return (
     <div>
-      {/* Resizable target */}
+      {/* Resizable target with ARIA live region for screen readers */}
       <div ref={ref} style={{ resize: 'both', overflow: 'auto', padding: 24 }}>
-        {width !== undefined
-          ? `${Math.round(width)} x ${Math.round(height!)}`
-          : 'Drag to resize'}
+        <span aria-live="polite" aria-atomic="true" role="status">
+          {width !== undefined
+            ? `${Math.round(width)} × ${Math.round(height!)}`
+            : 'Drag to resize'}
+        </span>
       </div>
 
-      {/* Bar chart */}
-      <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 120 }}>
+      {/* Bar chart with accessible label */}
+      <div
+        role="img"
+        aria-label={`Resize history chart: ${history.length} measurements`}
+        style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 120 }}
+      >
         {history.map((entry, i) => {
           const maxW = Math.max(...history.map((e) => e.w), 1);
           return (
             <div
               key={entry.t}
               className="resize-bar"
+              aria-hidden="true"
               style={{
                 flex: 1,
                 height: `${(entry.w / maxW) * 100}%`,
@@ -177,6 +184,20 @@ const ResizeVisualizer = () => {
   );
 };
 ```
+
+## Accessibility
+
+The visualizer uses ARIA attributes for screen reader support:
+
+- **`aria-live="polite"`** on the dimension readout announces size changes without interrupting the user
+- **`aria-atomic="true"`** ensures the full dimension string is read, not just the changed part
+- **`role="status"`** marks the readout as a live status region
+- **`role="img"`** with `aria-label` on the bar chart provides a meaningful summary
+- **`aria-hidden="true"`** on individual bars prevents verbose per-bar announcements
+
+::: tip
+When building resize-aware components, always wrap dynamic dimension readouts in an `aria-live` region so screen reader users are informed of size changes.
+:::
 
 ## Box Model Comparison View
 

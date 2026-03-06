@@ -1,3 +1,4 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { Bench } from 'tinybench';
 
 // Mock startTransition for Node environment
@@ -37,6 +38,14 @@ bench.add('RafScheduler — schedule 100 elements', () => {
   }
 });
 
+bench.add('RafScheduler — schedule 500 elements', () => {
+  using scheduler = new RafScheduler();
+  for (let i = 0; i < 500; i++) {
+    const el = {} as Element;
+    scheduler.schedule(el, createMockEntry(el), singleCbSet);
+  }
+});
+
 bench.add('RafScheduler — schedule 1000 elements', () => {
   using scheduler = new RafScheduler();
   for (let i = 0; i < 1000; i++) {
@@ -48,4 +57,17 @@ bench.add('RafScheduler — schedule 1000 elements', () => {
 await bench.run();
 
 console.table(bench.table());
+
+mkdirSync('bench/results', { recursive: true });
+const results = bench.tasks.map((task) => ({
+  name: task.name,
+  opsPerSecond: task.result?.hz ?? 0,
+  meanTime: task.result?.mean ?? 0,
+  margin: task.result?.rme ?? 0,
+}));
+writeFileSync(
+  'bench/results/scheduler.json',
+  JSON.stringify({ timestamp: new Date().toISOString(), results }, null, 2),
+);
+
 console.log('\n--- Scheduler Benchmark Complete ---');

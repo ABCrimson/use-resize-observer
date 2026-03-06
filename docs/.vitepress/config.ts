@@ -50,7 +50,7 @@ export default defineConfig({
       { text: 'Demos', link: '/demos/', activeMatch: '/demos/' },
       { text: 'Blog', link: '/blog/', activeMatch: '/blog/' },
       {
-        text: '0.3.0',
+        text: '0.4.0',
         items: [
           { text: 'Changelog', link: '/changelog' },
           { text: 'npm', link: 'https://npmjs.com/package/@crimson_dev/use-resize-observer' },

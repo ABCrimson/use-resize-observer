@@ -5,6 +5,27 @@ All notable changes to `@crimson_dev/use-resize-observer` will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-06
+
+### Added
+- Benchmark suite modernization: JSON results output to `bench/results/`, 500-element scheduler tier, writeSlot/readSlot roundtrip latency benchmark, heap delta tracking
+- Concurrency stress tests: 1000 elements in same rAF, rapid observe/unobserve cycling, concurrent callbacks, 1000-element scheduler flush
+- Memory pressure tests: 10k cycle leak detection, mass observe/unobserve verification, repeated pool disposal, worker slot bitmap full recycling
+- CI benchmark workflow (`.github/workflows/bench.yml`): auto-runs on push/PR, uploads artifacts, posts PR comments with results
+- Accessibility: ARIA live regions (`aria-live="polite"`, `role="status"`) on visualizer dimension readout, `role="img"` on bar chart
+- Accessibility documentation section in visualizer demo page
+
+### Changed
+- Worker hook now respects `box` option (previously ignored — always read content-box dimensions)
+- Worker hook effect dependency array includes `box` for proper re-subscription on box model change
+- Deep modernization audit of all 18 source files and 14 test files — all confirmed ES2026-compliant
+- V8 optimization audit: all hot paths (`observe`, `unobserve`, `schedule`, `writeSlot`, `readSlot`) confirmed monomorphic with no deoptimizations
+- Performance guide updated with V8 audit results and actual benchmark numbers
+- Test suite expanded: 102 tests across 14 suites (up from 94 tests in 12 suites)
+
+### Fixed
+- Worker hook `box` option was declared but not used — border-box measurements now correctly read from `borderWidth`/`borderHeight` slot values
+
 ## [0.3.0] - 2026-03-05
 
 ### Added
@@ -101,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stable callback identity via ref pattern (React Compiler safe)
 - Worker mode: SharedArrayBuffer + Float16Array + Atomics for off-main-thread
 
+[0.4.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.2.0
 [0.1.1]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.1.1

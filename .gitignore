@@ -10,3 +10,5 @@ docs/.vitepress/cache/
 docs/.vitepress/dist/
 *.log
 .turbo/
+bench/results/*.json
+!bench/results/baseline.json

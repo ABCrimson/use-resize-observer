@@ -1,6 +1,6 @@
 {
   "name": "@crimson_dev/use-resize-observer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Zero-dependency, Worker-native, ESNext-first React 19 ResizeObserver hook",
   "type": "module",
   "sideEffects": false,
