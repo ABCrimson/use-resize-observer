@@ -14,25 +14,12 @@
 
 <br />
 
-[![npm version][npm-badge]][npm-url]
-[![bundle size][size-badge]][size-url]
-[![CI][ci-badge]][ci-url]
-[![license][license-badge]][license-url]
-[![TypeScript][ts-badge]][ts-url]
-[![docs][docs-badge]][docs-url]
-
-[npm-badge]: https://img.shields.io/npm/v/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117
-[npm-url]: https://npmjs.com/package/@crimson_dev/use-resize-observer
-[size-badge]: https://img.shields.io/bundlephobia/minzip/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117&label=gzip
-[size-url]: https://bundlephobia.com/package/@crimson_dev/use-resize-observer
-[ci-badge]: https://img.shields.io/github/actions/workflow/status/ABCrimson/use-resize-observer/ci.yml?style=flat-square&labelColor=0D1117&label=CI
-[ci-url]: https://github.com/ABCrimson/use-resize-observer/actions/workflows/ci.yml
-[license-badge]: https://img.shields.io/npm/l/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117
-[license-url]: https://github.com/ABCrimson/use-resize-observer/blob/main/LICENSE
-[ts-badge]: https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&labelColor=0D1117
-[ts-url]: https://www.typescriptlang.org/
-[docs-badge]: https://img.shields.io/badge/docs-GitHub%20Pages-DC143C?style=flat-square&labelColor=0D1117
-[docs-url]: https://abcrimson.github.io/use-resize-observer/
+<a href="https://npmjs.com/package/@crimson_dev/use-resize-observer"><img src="https://img.shields.io/npm/v/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117" alt="npm version"></a>
+<a href="https://bundlephobia.com/package/@crimson_dev/use-resize-observer"><img src="https://img.shields.io/bundlephobia/minzip/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117&label=gzip" alt="bundle size"></a>
+<a href="https://github.com/ABCrimson/use-resize-observer/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/ABCrimson/use-resize-observer/ci.yml?style=flat-square&labelColor=0D1117&label=CI" alt="CI"></a>
+<a href="https://github.com/ABCrimson/use-resize-observer/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117" alt="license"></a>
+<a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&labelColor=0D1117" alt="TypeScript"></a>
+<a href="https://abcrimson.github.io/use-resize-observer/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-DC143C?style=flat-square&labelColor=0D1117" alt="docs"></a>
 
 </div>
 
