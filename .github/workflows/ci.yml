@@ -36,7 +36,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run test -- --project unit --coverage
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         if: github.event_name == 'pull_request'
 
   test-browser:
