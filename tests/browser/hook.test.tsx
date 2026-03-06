@@ -1,6 +1,6 @@
-import { render } from '@testing-library/react';
+import { cleanup, render } from '@testing-library/react';
 import { useRef } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { useResizeObserver } from '../../src/hook.js';
 
 const TestComponent = () => {
@@ -23,6 +23,8 @@ const ExternalRefComponent = () => {
 };
 
 describe('useResizeObserver (browser)', () => {
+  afterEach(cleanup);
+
   it('should render without errors', () => {
     const { getByTestId } = render(<TestComponent />);
     expect(getByTestId('observed')).toBeDefined();

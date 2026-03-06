@@ -1,6 +1,6 @@
-import { render } from '@testing-library/react';
+import { cleanup, render } from '@testing-library/react';
 import { useRef } from 'react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { useResizeObserverEntries } from '../../src/hook-multi.js';
 
 const MultiComponent = () => {
@@ -21,6 +21,8 @@ const MultiComponent = () => {
 };
 
 describe('useResizeObserverEntries (browser)', () => {
+  afterEach(cleanup);
+
   it('should render multiple observed elements', () => {
     const { getByTestId } = render(<MultiComponent />);
     expect(getByTestId('multi-1')).toBeDefined();

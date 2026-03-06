@@ -9,7 +9,7 @@ describe('Browser smoke tests', () => {
     expect(typeof requestAnimationFrame).toBe('function');
   });
 
-  it('should have SharedArrayBuffer type available', () => {
+  it.skipIf(!globalThis.crossOriginIsolated)('should have SharedArrayBuffer type available', () => {
     expect(typeof SharedArrayBuffer).toBe('function');
   });
 });

@@ -1,5 +1,5 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { cleanup, render } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 import { useResizeObserver } from '../../src/hook.js';
 
 const PoolTestComponent = ({ id }: { id: string }) => {
@@ -12,6 +12,8 @@ const PoolTestComponent = ({ id }: { id: string }) => {
 };
 
 describe('ObserverPool (browser)', () => {
+  afterEach(cleanup);
+
   it('should share a single ResizeObserver across multiple components', () => {
     const { getByTestId } = render(
       <div>

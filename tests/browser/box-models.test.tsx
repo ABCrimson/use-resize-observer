@@ -1,5 +1,5 @@
-import { render } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { cleanup, render } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 import { useResizeObserver } from '../../src/hook.js';
 
 const BoxModelComponent = ({
@@ -20,6 +20,7 @@ const BoxModelComponent = ({
 };
 
 describe('Box model options (browser)', () => {
+  afterEach(cleanup);
   it('should render with content-box', () => {
     const { getByTestId } = render(<BoxModelComponent box="content-box" />);
     expect(getByTestId('box-test')).toBeDefined();
