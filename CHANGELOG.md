@@ -5,6 +5,39 @@ All notable changes to `@crimson_dev/use-resize-observer` will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-06
+
+### Breaking Changes
+- Worker mode redesigned: `useResizeObserverWorker` now runs `ResizeObserver` on the main thread and writes measurements to a `SharedArrayBuffer` for zero-copy sharing with compute workers (WebGL, WASM). The previous architecture (observation inside a Web Worker) was architecturally broken — `ResizeObserver` is a DOM API unavailable in Workers. The deleted `worker.ts` file is no longer needed.
+
+### Fixed
+- **Critical**: SAB memory layout collision — `Int32Array` dirty flags and `Float16Array` data overlapped at byte 0. Dirty flag region now occupies bytes 0–1023, data region starts at byte 1024.
+- **Critical**: Worker mode used `ResizeObserver` inside a Web Worker where the DOM API is unavailable. Redesigned to main-thread observation with SAB data sharing.
+- **High**: `FinalizationRegistry` cleanup attempted `unobserve()` on GC'd elements (impossible — `WeakRef.deref()` returns `undefined`). Now only decrements the internal counter; the browser already stops observing GC'd targets.
+- **High**: `ResizeObserverContext` was exported but never wired into hooks. Both `useResizeObserver` and `useResizeObserverEntries` now consume the context and pass custom constructors to the pool.
+- **High**: `ObserverPool.observe()` skipped `ResizeObserver.observe()` for already-tracked elements, preventing box option updates. Now always calls `observe()` with the latest options.
+- **Medium**: `useResizeObserverEntries` created a new `Map` on every resize even when dimensions were unchanged. Added identity comparison to skip unnecessary allocations.
+- **Medium**: `sideEffects: false` in `package.json` caused bundlers to tree-shake the `/shim` entry. Changed to `sideEffects: ["./dist/shim.js"]`.
+- **Medium**: Global `'use client'` banner in tsdown config applied to all entries including `/server` and `/core`. Removed global banner; source-level directives handle this correctly.
+- **Low**: `extractBoxSize` returned silent `undefined` for empty size arrays — now returns `{ width: 0, height: 0 }`.
+- **Low**: Dead `elementId` field removed from worker protocol types.
+- **Low**: Module-level `slotBitmap` in worker hook properly scoped.
+
+### Added
+- Integration test suite (9 tests): full pool → scheduler → React state pipeline
+- Worker protocol test suite (28 tests): SAB memory layout, dirty flag isolation, write/read round-trip, slot allocation/release lifecycle
+- Box option change tests (3 tests): verifies re-observation with updated options
+- FinalizationRegistry tests (5 tests): registration, unregistration, multi-callback scenarios
+- Multi-element edge case tests (4 tests): duplicate refs, dynamic add/remove, Map identity optimization
+
+### Changed
+- Worker protocol: `SAB_SIZE` increased from 2048 to 3072 bytes (separate dirty flag and data regions)
+- Worker protocol exports: added `DATA_OFFSET`, `DIRTY_REGION_BYTES` constants
+- `ObserverPool` constructor accepts optional `ResizeObserver` constructor for DI
+- All architecture documentation updated to reflect main-thread observation model
+- All bundle size references updated to 1.12 kB across documentation
+- 151 tests across 16 suites (up from 102 tests in 14 suites)
+
 ## [0.4.1] - 2026-03-06
 
 ### Changed
@@ -132,6 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stable callback identity via ref pattern (React Compiler safe)
 - Worker mode: SharedArrayBuffer + Float16Array + Atomics for off-main-thread
 
+[0.5.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.5.0
 [0.4.1]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.4.1
 [0.4.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ABCrimson/use-resize-observer/releases/tag/v0.3.0

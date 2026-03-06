@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { Bench } from 'tinybench';
+import { Bench, type BenchOptions } from 'tinybench';
 
 // Mock for Node environment
 globalThis.ResizeObserver = class {
@@ -20,13 +20,12 @@ globalThis.cancelAnimationFrame = () => {};
 
 const { ObserverPool } = await import('../src/pool.js');
 
-/** Shared empty options object — avoids allocation per iteration. */
 const emptyOpts: ResizeObserverOptions = {};
 
 const bench = new Bench({
   time: 2000,
   warmupTime: 500,
-});
+} as const satisfies BenchOptions);
 
 bench.add('Memory — 1000 observe/unobserve cycles', () => {
   using pool = new ObserverPool();
@@ -64,10 +63,10 @@ console.table(bench.table());
 const heapDelta = heapAfter.heapUsed - heapBefore.heapUsed;
 const heapDeltaMB = heapDelta / 1024 / 1024;
 
-console.log('\nHeap before:', (heapBefore.heapUsed / 1024 / 1024).toFixed(2), 'MB');
-console.log('Heap after:', (heapAfter.heapUsed / 1024 / 1024).toFixed(2), 'MB');
-console.log('Heap delta:', heapDeltaMB.toFixed(4), 'MB');
-console.log('Heap total:', (heapAfter.heapTotal / 1024 / 1024).toFixed(2), 'MB');
+console.log(`\nHeap before: ${(heapBefore.heapUsed / 1024 / 1024).toFixed(2)} MB`);
+console.log(`Heap after: ${(heapAfter.heapUsed / 1024 / 1024).toFixed(2)} MB`);
+console.log(`Heap delta: ${heapDeltaMB.toFixed(4)} MB`);
+console.log(`Heap total: ${(heapAfter.heapTotal / 1024 / 1024).toFixed(2)} MB`);
 
 if (Math.abs(heapDeltaMB) > 1) {
   console.warn('WARNING: Heap delta exceeds 1 MB threshold over 10k cycles');

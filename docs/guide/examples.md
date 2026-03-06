@@ -185,13 +185,7 @@ const AspectRatioDisplay = () => {
 100 simultaneously resizing elements using worker mode:
 
 ```tsx
-import { useResizeObserver } from '@crimson_dev/use-resize-observer';
-import { createWorkerObserver } from '@crimson_dev/use-resize-observer/worker';
-
-const workerObserver = createWorkerObserver({
-  maxElements: 256,
-  precision: 'float16',
-});
+import { useResizeObserverWorker } from '@crimson_dev/use-resize-observer/worker';
 
 const WorkerGrid = () => {
   const items = Array.from({ length: 100 }, (_, i) => i);
@@ -206,9 +200,7 @@ const WorkerGrid = () => {
 };
 
 const WorkerCell = ({ index }: { index: number }) => {
-  const { ref, width } = useResizeObserver<HTMLDivElement>({
-    observer: workerObserver,
-  });
+  const { ref, width } = useResizeObserverWorker<HTMLDivElement>();
 
   const hue = ((index * 37) + (width ?? 0)) % 360;
 

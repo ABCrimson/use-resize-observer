@@ -101,7 +101,7 @@ import { ResizeObserverContext } from '@crimson_dev/use-resize-observer';
 
 ### `useResizeObserverWorker<T>(options?)`
 
-Off-main-thread resize observation via `SharedArrayBuffer` + `Float16Array` + `Atomics`.
+Main-thread resize observation with `SharedArrayBuffer` + `Float16Array` + `Atomics` for zero-copy data sharing with compute workers.
 
 Requires `crossOriginIsolated === true` (COOP/COEP headers).
 

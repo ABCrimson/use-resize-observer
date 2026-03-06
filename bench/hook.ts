@@ -1,10 +1,10 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { Bench } from 'tinybench';
+import { Bench, type BenchOptions } from 'tinybench';
 
 const bench = new Bench({
   time: 1000,
   warmupTime: 500,
-});
+} as const satisfies BenchOptions);
 
 bench.add('Hook import cost', async () => {
   await import('../src/hook.js');

@@ -3,9 +3,11 @@ import { ResizeObserverShim, sumPrecise } from '../../src/shim.js';
 
 const flushRaf = (globalThis as Record<string, unknown>).flushRaf as () => void;
 
+const asReadonly = <const T extends ReadonlyArray<number>>(arr: T): T => arr;
+
 describe('sumPrecise', () => {
   it('should sum an array of numbers', () => {
-    expect(sumPrecise([1, 2, 3])).toBe(6);
+    expect(sumPrecise(asReadonly([1, 2, 3]))).toBe(6);
   });
 
   it('should return 0 for empty array', () => {
@@ -13,16 +15,16 @@ describe('sumPrecise', () => {
   });
 
   it('should handle floating point values', () => {
-    const result = sumPrecise([0.1, 0.2, 0.3]);
+    const result = sumPrecise(asReadonly([0.1, 0.2, 0.3]));
     expect(result).toBeCloseTo(0.6, 10);
   });
 
   it('should handle negative numbers', () => {
-    expect(sumPrecise([-1, 2, -3, 4])).toBe(2);
+    expect(sumPrecise(asReadonly([-1, 2, -3, 4]))).toBe(2);
   });
 
   it('should handle single value', () => {
-    expect(sumPrecise([42])).toBe(42);
+    expect(sumPrecise(asReadonly([42]))).toBe(42);
   });
 
   it('should use native Math.sumPrecise when available', () => {
@@ -43,7 +45,6 @@ describe('ResizeObserverShim', () => {
     expect(typeof ResizeObserverShim).toBe('function');
     const shim = new ResizeObserverShim(() => {});
     expect(shim).toBeDefined();
-    shim.disconnect();
   });
 
   it('should have observe, unobserve, and disconnect methods', () => {
@@ -51,7 +52,6 @@ describe('ResizeObserverShim', () => {
     expect(typeof shim.observe).toBe('function');
     expect(typeof shim.unobserve).toBe('function');
     expect(typeof shim.disconnect).toBe('function');
-    shim.disconnect();
   });
 
   it('should observe and unobserve elements', () => {
@@ -59,7 +59,6 @@ describe('ResizeObserverShim', () => {
     const el = document.createElement('div');
     shim.observe(el);
     shim.unobserve(el);
-    shim.disconnect();
   });
 
   it('should disconnect all observations', () => {
@@ -77,10 +76,8 @@ describe('ResizeObserverShim', () => {
     const el = document.createElement('div');
     shim.observe(el);
     shim.unobserve(el);
-    // After unobserving last element, no callback should fire
     flushRaf();
     expect(cb).not.toHaveBeenCalled();
-    shim.disconnect();
   });
 
   it('should detect size changes and call callback', () => {
@@ -89,7 +86,6 @@ describe('ResizeObserverShim', () => {
     const el = document.createElement('div');
     document.body.appendChild(el);
 
-    // Mock getBoundingClientRect to return changing values
     let width = 100;
     let height = 50;
     vi.spyOn(el, 'getBoundingClientRect').mockImplementation(
@@ -98,22 +94,19 @@ describe('ResizeObserverShim', () => {
 
     shim.observe(el);
 
-    // First rAF — initial measurement fires callback
     flushRaf();
     expect(cb).toHaveBeenCalledTimes(1);
 
-    // Same size — no callback
     flushRaf();
     expect(cb).toHaveBeenCalledTimes(1);
 
-    // Size changes — callback fires
     width = 200;
     height = 100;
     flushRaf();
     expect(cb).toHaveBeenCalledTimes(2);
 
     const lastCall = cb.mock.calls[1]!;
-    const entries = lastCall[0] as ResizeObserverEntry[];
+    const entries = lastCall[0] as ReadonlyArray<ResizeObserverEntry>;
     expect(entries).toHaveLength(1);
     expect(entries[0]!.target).toBe(el);
     expect(entries[0]!.contentBoxSize[0]!.inlineSize).toBe(200);
@@ -137,7 +130,7 @@ describe('ResizeObserverShim', () => {
     shim.observe(el);
     flushRaf();
 
-    const entries = cb.mock.calls[0]![0] as ResizeObserverEntry[];
+    const entries = cb.mock.calls[0]![0] as ReadonlyArray<ResizeObserverEntry>;
     expect(entries[0]!.devicePixelContentBoxSize[0]!.inlineSize).toBe(200);
     expect(entries[0]!.devicePixelContentBoxSize[0]!.blockSize).toBe(100);
 
@@ -165,7 +158,7 @@ describe('ResizeObserverShim', () => {
 
     flushRaf();
     expect(cb).toHaveBeenCalledTimes(1);
-    const entries = cb.mock.calls[0]![0] as ResizeObserverEntry[];
+    const entries = cb.mock.calls[0]![0] as ReadonlyArray<ResizeObserverEntry>;
     expect(entries).toHaveLength(2);
 
     shim.disconnect();

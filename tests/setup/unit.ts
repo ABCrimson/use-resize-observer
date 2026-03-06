@@ -52,8 +52,10 @@ class MockResizeObserver implements ResizeObserver {
       ] as unknown as ReadonlyArray<ResizeObserverSize>,
       devicePixelContentBoxSize: [
         {
-          inlineSize: width * (globalThis.devicePixelRatio ?? 1),
-          blockSize: height * (globalThis.devicePixelRatio ?? 1),
+          inlineSize:
+            width * (globalThis.devicePixelRatio !== undefined ? globalThis.devicePixelRatio : 1),
+          blockSize:
+            height * (globalThis.devicePixelRatio !== undefined ? globalThis.devicePixelRatio : 1),
         },
       ] as unknown as ReadonlyArray<ResizeObserverSize>,
     };

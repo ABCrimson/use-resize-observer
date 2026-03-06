@@ -9,7 +9,7 @@ import type { ResizeCallback } from './types.js';
  * @internal
  */
 interface FlushEntry {
-  readonly callbacks: ReadonlySet<ResizeCallback>;
+  readonly callbacks: ResizeCallback | ReadonlySet<ResizeCallback>;
   readonly entry: ResizeObserverEntry;
 }
 
@@ -18,20 +18,26 @@ interface FlushEntry {
  * `requestAnimationFrame` flush, wrapped in React `startTransition` for
  * non-urgent update scheduling.
  *
- * Uses a `Map<Element, FlushEntry>` with last-write-wins semantics so that
- * 100 simultaneous resize events produce exactly 1 React render cycle.
+ * Uses double-buffered `Map<Element, FlushEntry>` with last-write-wins
+ * semantics so that 100 simultaneous resize events produce exactly 1 React
+ * render cycle. Buffer swap eliminates per-flush Map allocation.
  *
  * Implements `Disposable` for ES2026 `using` declarations.
  *
  * @internal
  */
 export class RafScheduler implements Disposable {
-  readonly #queue = new Map<Element, FlushEntry>();
+  #buffers: [Map<Element, FlushEntry>, Map<Element, FlushEntry>] = [new Map(), new Map()];
+  #active = 0;
   #rafId: number | null = null;
 
   /** Enqueue a resize observation for the next rAF flush. */
-  schedule(target: Element, entry: ResizeObserverEntry, cbs: ReadonlySet<ResizeCallback>): void {
-    this.#queue.set(target, { callbacks: cbs, entry });
+  schedule(
+    target: Element,
+    entry: ResizeObserverEntry,
+    cbs: ResizeCallback | ReadonlySet<ResizeCallback>,
+  ): void {
+    this.#buffers[this.#active]!.set(target, { callbacks: cbs, entry });
     this.#requestFlush();
   }
 
@@ -44,26 +50,34 @@ export class RafScheduler implements Disposable {
   }
 
   #flush(): void {
-    // Snapshot and clear before dispatching to avoid re-entrant mutations
-    const snapshot = new Map(this.#queue);
-    this.#queue.clear();
+    // Swap buffers — zero allocation, O(1) operation
+    const flushing = this.#buffers[this.#active]!;
+    this.#active ^= 1;
 
     startTransition(() => {
-      for (const { callbacks, entry } of snapshot.values()) {
-        for (const cb of callbacks) {
-          cb(entry);
+      for (const { callbacks, entry } of flushing.values()) {
+        if (typeof callbacks === 'function') {
+          // Fast path: single callback — no iterator overhead
+          callbacks(entry);
+        } else {
+          for (const cb of callbacks) {
+            cb(entry);
+          }
         }
       }
     });
+
+    flushing.clear();
   }
 
-  /** Cancel any pending rAF and clear the queue. */
+  /** Cancel any pending rAF and clear both buffers. */
   cancel(): void {
     if (this.#rafId !== null) {
       cancelAnimationFrame(this.#rafId);
       this.#rafId = null;
     }
-    this.#queue.clear();
+    this.#buffers[0]!.clear();
+    this.#buffers[1]!.clear();
   }
 
   /** Disposable contract (ES2026 explicit resource management). */

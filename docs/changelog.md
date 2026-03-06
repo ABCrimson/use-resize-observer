@@ -10,6 +10,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
+## [0.5.0] - 2026-03-06
+
+### Breaking Changes
+- Worker mode redesigned: `useResizeObserverWorker` now runs `ResizeObserver` on the main thread and writes measurements to a `SharedArrayBuffer` for zero-copy sharing with compute workers (WebGL, WASM). The previous architecture was broken — `ResizeObserver` is a DOM API unavailable in Web Workers.
+
+### Fixed
+- **Critical**: SAB memory layout collision — dirty flags and data overlapped at byte 0. Separated into two regions (0–1023 for Int32 flags, 1024–3071 for Float16 data).
+- **Critical**: Worker mode attempted `ResizeObserver` inside a Web Worker. Redesigned to main-thread observation + SAB sharing.
+- **High**: `FinalizationRegistry` cleanup attempted `unobserve()` on GC'd elements. Now only decrements counter.
+- **High**: `ResizeObserverContext` wired into both hooks for dependency injection.
+- **High**: Pool now always re-observes with latest box options.
+- **Medium**: `useResizeObserverEntries` Map identity optimization — skips allocation when dimensions unchanged.
+- **Medium**: `sideEffects` changed to `["./dist/shim.js"]` to prevent tree-shaking the polyfill.
+- **Medium**: Removed global `'use client'` banner from non-client entries.
+- **Low**: `extractBoxSize` handles empty size arrays, dead `elementId` removed, `slotBitmap` scoped.
+
+### Added
+- Integration tests (9), worker-protocol tests (28), box change tests (3), FinalizationRegistry tests (5), multi-element edge cases (4)
+- 151 tests across 16 suites
+
+### Changed
+- SAB size: 2048 → 3072 bytes (separate dirty flag / data regions)
+- `ObserverPool` constructor accepts optional `ResizeObserver` constructor for DI
+- All documentation updated for main-thread observation model and 1.12 kB size
+
 ## [0.4.1] - 2026-03-06
 
 ### Changed
@@ -95,7 +120,7 @@ See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blo
 - `createResizeObserver` framework-agnostic factory API
 - `ResizeObserverContext` for dependency injection and testing
 - `createResizeObservable` framework-agnostic core (`/core` entry)
-- `createWorkerObserver` for off-main-thread measurements (`/worker` entry)
+- `useResizeObserverWorker` for SAB-based measurements (`/worker` entry)
 - `createServerResizeObserverMock` for SSR/RSC (`/server` entry)
 - rAF batching with `startTransition` integration
 - Support for all three box models: `content-box`, `border-box`, `device-pixel-content-box`

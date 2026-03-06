@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ObserverPool } from '../../src/pool.js';
 import { allocateSlot, MAX_ELEMENTS, releaseSlot } from '../../src/worker/protocol.js';
 
-const emptyOpts: ResizeObserverOptions = {};
+const emptyOpts = {} satisfies ResizeObserverOptions;
 
 describe('Memory pressure', () => {
   it('should not leak memory over 10k observe/unobserve cycles', () => {

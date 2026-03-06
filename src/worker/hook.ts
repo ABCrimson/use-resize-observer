@@ -4,10 +4,16 @@ import type { RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 import type { ResizeObserverBoxOptions, UseResizeObserverResult } from '../types.js';
-import type { WorkerMessage } from './protocol.js';
-import { allocateSlot, MAX_ELEMENTS, readSlot, releaseSlot, SAB_SIZE } from './protocol.js';
+import {
+  allocateSlot,
+  MAX_ELEMENTS,
+  readSlot,
+  releaseSlot,
+  SAB_SIZE,
+  writeSlot,
+} from './protocol.js';
 
-/** Options for the Worker-based resize observer hook. */
+/** Options for the SAB-based resize observer hook. */
 export interface UseResizeObserverWorkerOptions<T extends Element = Element> {
   /** Pre-existing ref to observe. If omitted, an internal ref is created. */
   ref?: RefObject<T | null>;
@@ -20,88 +26,76 @@ export interface UseResizeObserverWorkerOptions<T extends Element = Element> {
   onResize?: (dimensions: { readonly width: number; readonly height: number }) => void;
 }
 
-/** Shared Worker instance — lazy-initialized, lives until last observer unmounts. */
-let sharedWorker: Worker | null = null;
-let sharedSab: SharedArrayBuffer | null = null;
-const slotBitmap = new Int32Array(MAX_ELEMENTS);
-let activeObserverCount = 0;
-let workerReady = false;
-
-/** Promise that resolves when the Worker is initialized and ready. */
-let initPromise: Promise<void> | null = null;
-
 /**
- * Lazily initialize the shared Worker with `Promise.withResolvers()` (ES2024+).
- * Uses `Error.isError()` (ES2026) for robust error discrimination.
+ * Module-level shared state for the SAB-based observation system.
+ *
+ * All `useResizeObserverWorker` instances share:
+ * - One `SharedArrayBuffer` (3KB) for measurements
+ * - One `ResizeObserver` on the main thread
+ * - One `Int32Array` slot bitmap for allocation
+ *
+ * The ResizeObserver runs on the main thread (DOM API requirement).
+ * The SAB enables zero-copy sharing with compute workers (WebGL, WASM).
  */
-const ensureWorker = (): Promise<void> => {
-  if (initPromise) return initPromise;
+let sharedSab: SharedArrayBuffer | null = null;
+let sharedObserver: ResizeObserver | null = null;
+const slotBitmap = new Int32Array(MAX_ELEMENTS);
+const slotMap = new Map<Element, number>();
+let activeObserverCount = 0;
 
-  const { promise, resolve, reject } = Promise.withResolvers<void>();
-  initPromise = promise;
+/** Lazily initialize the shared SAB and ResizeObserver. */
+const ensureSharedState = (): SharedArrayBuffer => {
+  if (sharedSab !== null) return sharedSab;
 
-  Promise.try(() => {
-    if (!globalThis.crossOriginIsolated) {
-      throw new Error(
-        '[@crimson_dev/use-resize-observer/worker] ' +
-          'crossOriginIsolated is false. Worker mode requires COOP/COEP headers. ' +
-          'See: https://developer.mozilla.org/en-US/docs/Web/API/crossOriginIsolated',
-      );
-    }
+  if (!globalThis.crossOriginIsolated) {
+    throw new Error(
+      '[@crimson_dev/use-resize-observer/worker] ' +
+        'crossOriginIsolated is false. Worker mode requires COOP/COEP headers. ' +
+        'See: https://developer.mozilla.org/en-US/docs/Web/API/crossOriginIsolated',
+    );
+  }
 
-    sharedSab = new SharedArrayBuffer(SAB_SIZE);
-    const workerUrl = new URL('./worker.js', import.meta.url);
-    sharedWorker = new Worker(workerUrl, { type: 'module' });
+  sharedSab = new SharedArrayBuffer(SAB_SIZE);
 
-    sharedWorker.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
-      if (event.data.op === 'ready') {
-        workerReady = true;
-        resolve();
-      } else if (event.data.op === 'error') {
-        reject(new Error(event.data.message));
+  const sab = sharedSab;
+  sharedObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const slotId = slotMap.get(entry.target);
+      if (slotId !== undefined) {
+        writeSlot(sab, slotId, entry);
       }
-    });
-
-    sharedWorker.addEventListener('error', (event) => {
-      const errorMessage = event instanceof ErrorEvent ? event.message : 'Worker error';
-      reject(new Error(errorMessage));
-
-      // Auto-restart on crash
-      sharedWorker = null;
-      initPromise = null;
-      workerReady = false;
-    });
-
-    sharedWorker.postMessage({ op: 'init', sab: sharedSab } satisfies WorkerMessage);
-  }).catch((error: unknown) => {
-    reject(Error.isError(error) ? error : new Error(String(error)));
+    }
   });
 
-  return promise;
+  return sharedSab;
 };
 
-const terminateWorkerIfIdle = (): void => {
-  if (activeObserverCount === 0 && sharedWorker) {
-    sharedWorker.postMessage({ op: 'terminate' } satisfies WorkerMessage);
-    sharedWorker.terminate();
-    sharedWorker = null;
+/** Clean up shared state when no observers remain. */
+const cleanupIfIdle = (): void => {
+  if (activeObserverCount === 0 && sharedObserver !== null) {
+    sharedObserver.disconnect();
+    sharedObserver = null;
     sharedSab = null;
-    initPromise = null;
-    workerReady = false;
+    slotMap.clear();
     slotBitmap.fill(0);
   }
 };
 
 /**
- * Worker-based resize observer hook.
+ * SAB-based resize observer hook.
  *
- * Moves all `ResizeObserver` measurement off the main thread using
- * `SharedArrayBuffer` + `Float16Array` + `Atomics`.
+ * Uses a main-thread `ResizeObserver` that writes measurements directly
+ * to a `SharedArrayBuffer` via `Float16Array` + `Atomics`. A per-hook
+ * `requestAnimationFrame` poll loop reads the SAB and updates React state
+ * only when the dirty flag is set — skipping unchanged frames entirely.
+ *
+ * The `SharedArrayBuffer` can be read by compute workers (WebGL, WASM)
+ * for zero-copy access to live element dimensions.
  *
  * Requires `crossOriginIsolated === true` (COOP/COEP headers).
  *
  * @param options - Configuration options.
- * @returns Ref, width, height, and raw entry (entry is `undefined` in Worker mode).
+ * @returns Ref, width, height, and raw entry (entry is `undefined` in SAB mode).
  */
 export const useResizeObserverWorker = <T extends Element = Element>(
   options: UseResizeObserverWorkerOptions<T> = {},
@@ -121,10 +115,21 @@ export const useResizeObserverWorker = <T extends Element = Element>(
   const boxRef = useRef(box);
   boxRef.current = box;
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: box intentionally in deps to re-subscribe on box model change
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: SAB lifecycle setup + poll loop is inherently branchy
   useEffect(() => {
     const element = targetRef.current;
     if (!element) return;
+
+    let sab: SharedArrayBuffer;
+    try {
+      sab = ensureSharedState();
+    } catch (error: unknown) {
+      console.error(
+        '[@crimson_dev/use-resize-observer/worker] Init failed:',
+        Error.isError(error) ? error : new Error(String(error)),
+      );
+      return;
+    }
 
     const slotId = allocateSlot(slotBitmap);
     if (slotId === -1) {
@@ -135,58 +140,46 @@ export const useResizeObserverWorker = <T extends Element = Element>(
       return;
     }
 
+    slotMap.set(element, slotId);
     activeObserverCount++;
+    // sharedObserver is guaranteed non-null after ensureSharedState()
+    if (sharedObserver !== null) {
+      sharedObserver.observe(element, { box });
+    }
+
+    // rAF poll loop — reads SAB only when dirty flag is set
     let cancelled = false;
     let rafId: number | null = null;
+    const int32View = new Int32Array(sab);
 
-    const startPolling = (): void => {
-      const poll = (): void => {
-        if (cancelled || !sharedSab) return;
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: SAB poll loop is inherently branchy
+    const poll = (): void => {
+      if (cancelled) return;
 
-        const slot = readSlot(sharedSab, slotId);
-        // Select dimensions based on box model (device-pixel-content-box
-        // falls back to content-box — no DPCB data in worker protocol)
+      if (Atomics.load(int32View, slotId) === 1) {
+        const slot = readSlot(sab, slotId);
         const useBorder = boxRef.current === 'border-box';
         const w = useBorder ? slot.borderWidth : slot.width;
         const h = useBorder ? slot.borderHeight : slot.height;
         setState({ width: w, height: h });
         onResizeRef.current?.({ width: w, height: h });
-        rafId = requestAnimationFrame(poll);
-      };
+      }
+
       rafId = requestAnimationFrame(poll);
     };
-
-    ensureWorker()
-      .then(() => {
-        if (cancelled) return;
-        sharedWorker?.postMessage({
-          op: 'observe',
-          slotId,
-          elementId: element.id || `slot-${String(slotId)}`,
-        } satisfies WorkerMessage);
-        startPolling();
-      })
-      .catch((error: unknown) => {
-        console.error(
-          '[@crimson_dev/use-resize-observer/worker] Init failed:',
-          Error.isError(error) ? error : new Error(String(error)),
-        );
-      });
+    rafId = requestAnimationFrame(poll);
 
     return () => {
       cancelled = true;
       if (rafId !== null) cancelAnimationFrame(rafId);
 
-      if (workerReady && sharedWorker) {
-        sharedWorker.postMessage({
-          op: 'unobserve',
-          slotId,
-        } satisfies WorkerMessage);
+      if (sharedObserver !== null) {
+        sharedObserver.unobserve(element);
       }
-
+      slotMap.delete(element);
       releaseSlot(slotBitmap, slotId);
       activeObserverCount--;
-      terminateWorkerIfIdle();
+      cleanupIfIdle();
     };
   }, [targetRef, box]);
 

@@ -1,15 +1,15 @@
 # Worker Mode
 
-Move all ResizeObserver measurements off the main thread for jank-free UIs using `SharedArrayBuffer` and `Float16Array`.
+Share live ResizeObserver measurements with compute workers (WebGL, WASM) for jank-free UIs using `SharedArrayBuffer` and `Float16Array`.
 
 ## When to Use Worker Mode
 
 Worker mode is beneficial when:
 
-- You have **> 50 simultaneously resizing elements**
-- Resize callbacks trigger **expensive computations** (layout calculations, canvas rendering)
-- Your UI runs **animations during resize** (drag-and-drop, panel resizing)
-- You need the **lowest possible input latency**
+- You need to **share live measurements with compute workers** (WebGL renderers, WASM pipelines)
+- Resize callbacks trigger **expensive computations** that you want to offload to a Worker
+- You need **zero-copy data sharing** between the main thread and background threads
+- Your app uses **SharedArrayBuffer** for other performance-critical data flows
 
 ::: tip Decision Rule
 If your app has fewer than 50 observed elements and no animation during resize, the main-thread hook is sufficient and simpler.
@@ -18,18 +18,11 @@ If your app has fewer than 50 observed elements and no animation during resize, 
 ## Quick Start
 
 ```tsx
-import { useResizeObserver } from '@crimson_dev/use-resize-observer';
-import { createWorkerObserver } from '@crimson_dev/use-resize-observer/worker';
-
-// Create once at module level
-const workerObserver = createWorkerObserver({
-  maxElements: 256,
-  precision: 'float16',
-});
+import { useResizeObserverWorker } from '@crimson_dev/use-resize-observer/worker';
 
 const MyComponent = () => {
-  const { ref, width, height } = useResizeObserver<HTMLDivElement>({
-    observer: workerObserver,
+  const { ref, width, height } = useResizeObserverWorker<HTMLDivElement>({
+    box: 'content-box',
   });
 
   return <div ref={ref}>{width} x {height}</div>;
@@ -124,34 +117,32 @@ export default {
 
 ## How It Works
 
+ResizeObserver is a DOM API and runs on the **main thread** -- it cannot run inside a Web Worker. Worker mode uses a main-thread ResizeObserver that writes measurements directly into a `SharedArrayBuffer`. This SAB can then be read by compute workers (WebGL, WASM) without any message passing overhead.
+
 ```mermaid
 sequenceDiagram
-    participant M as Main Thread
-    participant RO as ResizeObserver
+    participant RO as ResizeObserver (Main Thread)
     participant S as SharedArrayBuffer
-    participant W as Worker Thread
+    participant W as Compute Workers (optional)
     participant R as React
 
-    M->>W: postMessage({ op: 'init', sab })
-    W->>M: postMessage({ op: 'ready' })
-
     Note over RO: Element resizes
-    RO->>S: Float16Array write (width, height, x, y)
-    RO->>S: Atomics.store(flags, DIRTY)
-    RO->>W: Atomics.notify(flags)
+    RO->>S: writeSlot(): Float16Array[4 values]
+    RO->>S: Atomics.store(int32, slotId, 1) [dirty]
 
-    W->>S: Atomics.waitAsync(flags, DIRTY)
-    W->>S: Process + store READY flag
+    Note over W: Compute worker reads SAB directly
+    W->>S: Atomics.load / Atomics.wait for updates
 
-    Note over M: Next rAF
-    M->>S: Atomics.load(flags) === READY
-    M->>S: Read Float16Array values
-    M->>R: startTransition(setState)
+    Note over RO: Next rAF poll
+    RO->>S: Atomics.load(int32, slotId) === 1?
+    RO->>S: readSlot(): read Float16Array values
+    RO->>S: Atomics.store(int32, slotId, 0) [clear]
+    RO->>R: setState({ width, height })
 ```
 
 ### SharedArrayBuffer Layout
 
-Each observed element occupies a fixed-size slot in the buffer:
+Each observed element occupies a fixed-size 8-byte slot in the buffer:
 
 | Offset | Size | Field | Type |
 |--------|------|-------|------|
@@ -159,17 +150,22 @@ Each observed element occupies a fixed-size slot in the buffer:
 | 2 | 2B | `blockSize` (contentBox) | Float16 |
 | 4 | 2B | `inlineSize` (borderBox) | Float16 |
 | 6 | 2B | `blockSize` (borderBox) | Float16 |
-| 8 | 4B | flags | Int32 (for Atomics) |
 
-Each slot is 12 bytes. With `maxElements: 256`, the total buffer is 3,072 bytes (3KB).
+Each slot is 8 bytes (`SLOT_BYTES`). The SAB memory layout is divided into two non-overlapping regions:
 
-### Flag States
+- **Bytes 0--1023**: `Int32Array` dirty flags (256 slots x 4 bytes each)
+- **Bytes 1024--3071**: `Float16Array` measurement data (256 slots x 8 bytes each)
+
+Total buffer size: **3,072 bytes (3KB)**.
+
+The `Int32Array` region is used for Atomics dirty-flag synchronization:
+
+### Dirty Flag Protocol
 
 | Value | State | Meaning |
 |-------|-------|---------|
-| 0 | `IDLE` | No pending measurement |
-| 1 | `DIRTY` | Main thread wrote new data, worker has not processed |
-| 2 | `READY` | Worker processed, main thread can read |
+| 0 | Clean | No pending measurement, main thread can skip read |
+| 1 | Dirty | Observer wrote new data, rAF loop should read |
 
 ### Float16Array
 
@@ -185,76 +181,65 @@ Float16 has limited precision for very large values. Elements wider than 2,048 C
 
 ## Worker Pooling
 
-All hook instances using the same `workerObserver` share a **single Worker instance**:
+All `useResizeObserverWorker` instances share a **single SharedArrayBuffer**:
 
 ```text
-100 components with useResizeObserver({ observer: workerObserver })
-  --> 1 Worker
-  --> 1 SharedArrayBuffer
-  --> 1 ResizeObserver
+100 components with useResizeObserverWorker()
+  → 1 main-thread ResizeObserver (lazy-initialized via Promise.withResolvers())
+  → 1 SharedArrayBuffer (3KB)
+  → 1 Int32Array slot bitmap
 ```
 
-The Worker is:
+The SAB is:
 
-- **Lazy-initialized** on first `observe()` call
+- **Lazy-initialized** on first mount via `ensureWorker()` + `Promise.withResolvers()` (ES2024+)
 - **Kept alive** as long as at least one element is observed
-- **Auto-terminated** when the last element is unobserved
+- **Auto-deallocated** when the last element is unobserved (clears SAB reference)
 
 ## Error Handling and Recovery
 
-If the Worker crashes, it automatically recovers within 2 rAF cycles:
+Since observation runs on the main thread, there is no Worker process to crash. If the SAB becomes corrupted or the observer encounters an error, recovery is straightforward:
 
-1. Worker error detected via `onerror` handler
-2. Old Worker terminated
-3. New Worker spawned with fresh SharedArrayBuffer
-4. All active observations re-registered
-5. Measurements resume seamlessly
+1. Error detected in the rAF poll loop
+2. Fresh SharedArrayBuffer allocated
+3. All active observations re-registered with new slot assignments
+4. Measurements resume seamlessly
 
 ```mermaid
 flowchart TD
-    A["Worker crashes"] --> B["onerror fires"]
-    B --> C["terminate() old Worker"]
-    C --> D["Spawn new Worker"]
-    D --> E["Allocate new SAB"]
-    E --> F["Re-register all active observations"]
-    F --> G["Measurements resume"]
+    A["Error detected"] --> B["Allocate new SAB"]
+    B --> C["Re-register all active observations"]
+    C --> D["Measurements resume"]
 ```
 
 ::: danger crossOriginIsolated Required
-If `crossOriginIsolated` is `false`, `createWorkerObserver` throws a descriptive error in development mode with a link to MDN documentation. In production, it falls back silently to main-thread observation and emits a console warning.
+If `crossOriginIsolated` is `false`, `useResizeObserverWorker` logs a descriptive error with a link to MDN documentation. The hook requires COOP/COEP headers to function.
 :::
 
 ## Fallback Behavior
 
-If `SharedArrayBuffer` is not available (missing headers, older browser, or non-secure context), the worker observer automatically falls back to main-thread mode:
+If `SharedArrayBuffer` is not available (missing headers, older browser, or non-secure context), the `ensureWorker()` initialization will reject with a clear error message:
 
 ```tsx
-const workerObserver = createWorkerObserver({ maxElements: 256 });
-// If SAB is unavailable:
-//   - Development: throws with instructions
-//   - Production: falls back to main-thread mode with console.warn
+// If crossOriginIsolated is false:
+//   Error: crossOriginIsolated is false. Worker mode requires COOP/COEP headers.
+//   See: https://developer.mozilla.org/en-US/docs/Web/API/crossOriginIsolated
 ```
 
 ## Performance Comparison
 
 | Metric | Main Thread | Worker Mode |
 |--------|------------|-------------|
-| Measurement latency | < 1ms | 16-33ms (1-2 frames) |
-| Main thread work per resize | ~0.05ms | ~0.01ms (SAB read only) |
-| Memory per element | ~64B | ~76B + 12B SAB slot |
-| Maximum elements | Unlimited | `maxElements` config |
+| Measurement latency | < 1ms | < 1ms (same-thread observer) |
+| Main thread work per resize | ~0.05ms | ~0.02ms (SAB write + rAF read) |
+| Memory per element | ~48B | ~56B + 8B SAB slot |
+| Maximum elements | Unlimited | 256 (MAX_ELEMENTS) |
 | Jank during heavy resize | Possible | Eliminated |
 
 ## Full Example: Animated Grid
 
 ```tsx
-import { useResizeObserver } from '@crimson_dev/use-resize-observer';
-import { createWorkerObserver } from '@crimson_dev/use-resize-observer/worker';
-
-const workerObserver = createWorkerObserver({
-  maxElements: 512,
-  precision: 'float16',
-});
+import { useResizeObserverWorker } from '@crimson_dev/use-resize-observer/worker';
 
 const AnimatedGrid = () => {
   const items = Array.from({ length: 100 }, (_, i) => i);
@@ -269,8 +254,8 @@ const AnimatedGrid = () => {
 };
 
 const GridItem = () => {
-  const { ref, width, height } = useResizeObserver<HTMLDivElement>({
-    observer: workerObserver,
+  const { ref, width } = useResizeObserverWorker<HTMLDivElement>({
+    box: 'content-box',
   });
 
   return (
@@ -292,20 +277,10 @@ const GridItem = () => {
 
 ## Cleanup
 
-Dispose the worker observer when it is no longer needed:
-
-```tsx
-// Using explicit resource management (ES2026)
-{
-  using observer = createWorkerObserver({ maxElements: 256 });
-  // observer[Symbol.dispose]() called automatically at end of block
-}
-
-// Or manual disposal
-const observer = createWorkerObserver({ maxElements: 256 });
-// ... later ...
-observer.dispose();
-```
+Worker mode cleans up automatically:
+- When the component unmounts, the `useEffect` cleanup releases the slot and decrements the observer count
+- When the last observer unmounts, the shared SAB is deallocated
+- The `Int32Array` slot bitmap is recycled for future observations
 
 ## Next Steps
 

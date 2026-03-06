@@ -76,9 +76,9 @@ Switch between main-thread and Worker mode to compare behavior:
 | Mode | What Happens |
 |------|-------------|
 | **Main thread** | ResizeObserver callback runs on the main thread, measurements batched via rAF |
-| **Worker mode** | Measurements written to `SharedArrayBuffer` by ResizeObserver, read by main thread in rAF loop |
+| **Worker mode** | Main-thread ResizeObserver writes measurements to `SharedArrayBuffer`, read by rAF loop and optionally by compute workers |
 
-Both modes produce identical visual output, but Worker mode keeps the main thread completely free of observer callbacks.
+Both modes produce identical visual output, but Worker mode enables zero-copy measurement sharing with compute workers (WebGL, WASM) via `SharedArrayBuffer`.
 
 ::: warning Worker mode requirements
 Worker mode requires cross-origin isolation headers (COOP/COEP). The demo automatically detects whether `crossOriginIsolated` is available and disables the Worker toggle if not.

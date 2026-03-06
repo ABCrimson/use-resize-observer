@@ -1,6 +1,6 @@
-import { optimize } from 'svgo';
-import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { optimize } from 'svgo';
 
 const SVG_DIR = 'docs/public/diagrams';
 
@@ -30,7 +30,9 @@ await Promise.all(
     });
     await writeFile(`${SVG_DIR}/${file}`, result.data);
     const savings = ((1 - result.data.length / input.length) * 100).toFixed(1);
-    console.log(`  ${file}: ${input.length} -> ${result.data.length} bytes (${savings}% reduction)`);
+    console.log(
+      `  ${file}: ${input.length} -> ${result.data.length} bytes (${savings}% reduction)`,
+    );
   }),
 );
 

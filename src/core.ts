@@ -57,12 +57,13 @@ class ResizeObservableImpl extends EventTarget implements ResizeObservable {
     this.#observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const sizeEntry = extractBoxSize(entry, box);
-        const detail: ResizeEventDetail = {
-          width: sizeEntry?.inlineSize ?? 0,
-          height: sizeEntry?.blockSize ?? 0,
-          entry,
-        };
-        this.dispatchEvent(new ResizeEvent(detail));
+        this.dispatchEvent(
+          new ResizeEvent({
+            width: sizeEntry !== undefined ? sizeEntry.inlineSize : 0,
+            height: sizeEntry !== undefined ? sizeEntry.blockSize : 0,
+            entry,
+          }),
+        );
       }
     });
     this.#observer.observe(target, { box });
@@ -79,9 +80,6 @@ class ResizeObservableImpl extends EventTarget implements ResizeObservable {
 
 /**
  * Create a framework-agnostic resize observable for an element.
- *
- * Wraps a `ResizeObserver` with `EventTarget` dispatching — consumers
- * subscribe via `addEventListener('resize', handler)`.
  *
  * @param target - The DOM element to observe.
  * @param options - Configuration options.

@@ -23,9 +23,9 @@ graph TD
 
 | Benchmark | Target | Notes |
 |-----------|--------|-------|
-| Pool `observe()` throughput | > 1M ops/sec | WeakMap lookup + Set.add |
-| Pool `unobserve()` throughput | > 1M ops/sec | WeakMap lookup + Set.delete |
-| rAF flush latency (100 elements) | < 0.1ms | Single Map iteration |
+| Pool `observe()` throughput | > 1M ops/sec | WeakMap lookup, single-callback fast path |
+| Pool `unobserve()` throughput | > 1M ops/sec | WeakMap lookup, demote Set → callback |
+| rAF flush latency (100 elements) | < 0.1ms | Double-buffer XOR swap + Map iteration |
 | rAF flush latency (1,000 elements) | < 1ms | Still one rAF, one transition |
 | Hook render overhead | < 0.01ms above `useState` | Minimal wrapper |
 | Worker measurement p50 | < 33ms (2 rAF) | SharedArrayBuffer read |
@@ -38,28 +38,30 @@ graph TD
 
 The browser fires the `ResizeObserver` callback during the layout step, between style recalculation and paint. This callback has a tight time budget -- any work done here delays the frame.
 
-Our callback does the absolute minimum: write entries to a `Map` and schedule a rAF if one is not already pending.
+Our callback does the absolute minimum: write entries to the active buffer and schedule a rAF if one is not already pending.
 
 ```typescript
-// Simplified internal callback
+// Simplified internal callback (single-callback fast path)
 const callback: ResizeObserverCallback = (entries) => {
   for (const entry of entries) {
-    pendingQueue.set(entry.target, entry);
-  }
-  if (!rafScheduled) {
-    rafScheduled = true;
-    requestAnimationFrame(flush);
+    const slot = registry.get(entry.target);
+    if (typeof slot === 'function') {
+      // Fast path: single callback, no Set overhead
+      scheduler.schedule(entry.target, entry, slot);
+    } else if (slot && slot.size > 0) {
+      scheduler.schedule(entry.target, entry, slot);
+    }
   }
 };
 ```
 
 ### Layer 1: Deduplication
 
-If an element resizes multiple times before the rAF fires (which can happen during complex layout recalculations), only the last entry is kept. The `Map` keyed by element ensures last-write-wins semantics.
+If an element resizes multiple times before the rAF fires (which can happen during complex layout recalculations), only the last entry is kept. The double-buffered `Map` keyed by element ensures last-write-wins semantics with zero-allocation buffer swap (`active ^= 1`).
 
 ### Layer 2: rAF Batcher
 
-The `requestAnimationFrame` callback fires once per frame, regardless of how many resize events occurred. This collapses all resize activity into a single processing point.
+The `requestAnimationFrame` callback fires once per frame, regardless of how many resize events occurred. This collapses all resize activity into a single processing point. The buffer swap happens atomically via XOR — new events write to the fresh buffer while the previous buffer is being flushed.
 
 ### Layer 3: startTransition
 
@@ -99,13 +101,14 @@ The key difference from upstream v9 is that even though React 18+ batches `setSt
 
 ## GC-Backed Cleanup
 
-The observer pool uses `WeakMap` keyed by DOM elements. When a component unmounts and its DOM element is garbage collected, the WeakMap entry is automatically cleaned up. Additionally, a `FinalizationRegistry` removes any stale observations:
+The observer pool uses `WeakMap<Element, Callback | Set<Callback>>` keyed by DOM elements. When a component unmounts and its DOM element is garbage collected, the WeakMap entry is automatically cleaned up. Additionally, a `FinalizationRegistry` removes any stale observations:
 
 ```typescript
-const registry = new FinalizationRegistry<WeakRef<Element>>((ref) => {
-  const element = ref.deref();
-  if (element) {
-    observer.unobserve(element);
+readonly #finalizer = new FinalizationRegistry<WeakRef<Element>>((ref) => {
+  const el = ref.deref();
+  if (el) {
+    this.#observer.unobserve(el);
+    this.#size--;
   }
 });
 ```
@@ -185,5 +188,5 @@ If you see multiple render commits per frame in the React Profiler during a resi
 ## Next Steps
 
 - [Architecture](/guide/architecture) -- Deep dive into the pool and scheduler internals
-- [Worker Mode](/guide/worker) -- Detailed guide on off-main-thread measurements
+- [Worker Mode](/guide/worker) -- Detailed guide on SAB-based measurement sharing
 - [Bundle Size](/guide/bundle-size) -- How the small footprint contributes to load performance

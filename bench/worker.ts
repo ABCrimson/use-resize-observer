@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { Bench } from 'tinybench';
+import { Bench, type BenchOptions } from 'tinybench';
 import {
   allocateSlot,
   MAX_ELEMENTS,
@@ -12,7 +12,7 @@ import {
 const bench = new Bench({
   time: 1000,
   warmupTime: 500,
-});
+} as const satisfies BenchOptions);
 
 bench.add('Slot allocation throughput', () => {
   const bitmap = new Int32Array(MAX_ELEMENTS);
@@ -28,7 +28,6 @@ bench.add('Slot allocation — fill and release 256 slots', () => {
   }
 });
 
-/** Mock ResizeObserverEntry for writeSlot benchmarks. */
 const createMockEntry = (): ResizeObserverEntry =>
   ({
     target: {} as Element,

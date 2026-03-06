@@ -4,9 +4,9 @@ import { RafScheduler } from '../../src/scheduler.js';
 import type { ResizeCallback } from '../../src/types.js';
 
 const MockResizeObserver = (globalThis as Record<string, unknown>).MockResizeObserver as {
-  instances: Array<{
+  readonly instances: ReadonlyArray<{
     triggerResize: (entries: readonly ResizeObserverEntry[]) => void;
-    observedTargets: Map<Element, ResizeObserverOptions>;
+    readonly observedTargets: Map<Element, ResizeObserverOptions>;
   }>;
   findObserverFor: (
     el: Element,
@@ -15,6 +15,8 @@ const MockResizeObserver = (globalThis as Record<string, unknown>).MockResizeObs
 };
 
 const flushRaf = (globalThis as Record<string, unknown>).flushRaf as () => void;
+
+const emptyOpts = {} satisfies ResizeObserverOptions;
 
 const createMockEntry = (target: Element): ResizeObserverEntry =>
   ({
@@ -29,7 +31,7 @@ const createMockEntry = (target: Element): ResizeObserverEntry =>
     devicePixelContentBoxSize: [
       { inlineSize: 200, blockSize: 100 },
     ] as unknown as ReadonlyArray<ResizeObserverSize>,
-  }) as unknown as ResizeObserverEntry;
+  }) satisfies Record<string, unknown> as unknown as ResizeObserverEntry;
 
 describe('Concurrency stress tests', () => {
   it('should handle 1000 elements observing in the same rAF frame', () => {
@@ -47,7 +49,7 @@ describe('Concurrency stress tests', () => {
 
     // Observe all 1000 elements with unique callbacks
     for (let i = 0; i < count; i++) {
-      pool.observe(elements[i]!, {}, callbacks[i]!);
+      pool.observe(elements[i]!, emptyOpts, callbacks[i]!);
     }
 
     expect(pool.observedCount).toBe(1000);
@@ -56,8 +58,8 @@ describe('Concurrency stress tests', () => {
     for (let i = 0; i < count; i++) {
       const el = elements[i]!;
       const observer = MockResizeObserver.findObserverFor(el);
-      expect(observer).toBeDefined();
-      observer!.triggerResize([MockResizeObserver.createEntry(el, 100, 50)]);
+      if (observer === undefined) throw new Error(`No observer for element ${i}`);
+      observer.triggerResize([MockResizeObserver.createEntry(el, 100, 50)]);
     }
 
     // Flush a single rAF frame
@@ -82,7 +84,7 @@ describe('Concurrency stress tests', () => {
     for (let i = 0; i < 500; i++) {
       const el = document.createElement('div');
       const cb = vi.fn();
-      pool.observe(el, {}, cb);
+      pool.observe(el, emptyOpts, cb);
       pool.unobserve(el, cb);
     }
 
@@ -101,7 +103,7 @@ describe('Concurrency stress tests', () => {
 
     // Observe the element with all 10 callbacks
     for (const cb of callbacks) {
-      pool.observe(el, {}, cb);
+      pool.observe(el, emptyOpts, cb);
     }
 
     // Element is observed once (10 callbacks share 1 observation)
@@ -117,8 +119,8 @@ describe('Concurrency stress tests', () => {
 
     // Trigger resize
     const observer = MockResizeObserver.findObserverFor(el);
-    expect(observer).toBeDefined();
-    observer!.triggerResize([MockResizeObserver.createEntry(el, 100, 50)]);
+    if (observer === undefined) throw new Error('No observer for element');
+    observer.triggerResize([MockResizeObserver.createEntry(el, 100, 50)]);
 
     flushRaf();
 

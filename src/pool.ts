@@ -5,8 +5,9 @@ import type { ResizeCallback } from './types.js';
  * Shared observer pool that multiplexes many element observations through a
  * single `ResizeObserver` instance per document root.
  *
- * Uses `WeakMap` + `FinalizationRegistry` for GC-backed cleanup of detached
- * elements, and `RafScheduler` for batched, non-urgent React state updates.
+ * Uses a single-callback fast path (no Set allocation when only 1 callback
+ * per element), `WeakMap` + `FinalizationRegistry` for GC-backed cleanup,
+ * and `RafScheduler` for batched, non-urgent React state updates.
  *
  * Implements `Disposable` for ES2026 `using` declarations.
  *
@@ -14,24 +15,25 @@ import type { ResizeCallback } from './types.js';
  */
 export class ObserverPool implements Disposable {
   readonly #scheduler: RafScheduler;
-  readonly #registry = new WeakMap<Element, Set<ResizeCallback>>();
-  readonly #finalizer = new FinalizationRegistry<WeakRef<Element>>((ref) => {
-    const el = ref.deref();
-    if (el) {
-      this.#observer.unobserve(el);
-      this.#size--;
-    }
+  readonly #registry = new WeakMap<Element, ResizeCallback | Set<ResizeCallback>>();
+  readonly #finalizer = new FinalizationRegistry<void>(() => {
+    // Element was GC'd — the browser's ResizeObserver internally stops
+    // observing garbage-collected targets. We only need to correct the
+    // size counter. WeakMap entries auto-clean on GC.
+    this.#size--;
   });
   readonly #observer: ResizeObserver;
   #size = 0;
 
-  constructor(scheduler?: RafScheduler) {
+  constructor(scheduler?: RafScheduler, Ctor?: typeof ResizeObserver) {
     this.#scheduler = scheduler ?? createScheduler();
-    this.#observer = new ResizeObserver((entries) => {
+    const ResolvedCtor = Ctor !== undefined ? Ctor : globalThis.ResizeObserver;
+    this.#observer = new ResolvedCtor((entries) => {
       for (const entry of entries) {
-        const callbacks = this.#registry.get(entry.target);
-        if (callbacks?.size) {
-          this.#scheduler.schedule(entry.target, entry, callbacks);
+        const slot = this.#registry.get(entry.target);
+        // Fast path: single callback stored directly, Set for multi
+        if (slot !== undefined && (typeof slot === 'function' || slot.size > 0)) {
+          this.#scheduler.schedule(entry.target, entry, slot);
         }
       }
     });
@@ -39,27 +41,51 @@ export class ObserverPool implements Disposable {
 
   /** Begin observing an element with the given options and callback. */
   observe(target: Element, options: ResizeObserverOptions, cb: ResizeCallback): void {
-    let callbacks = this.#registry.get(target);
-    if (!callbacks) {
-      callbacks = new Set();
-      this.#registry.set(target, callbacks);
-      this.#finalizer.register(target, new WeakRef(target), target);
-      this.#observer.observe(target, options);
+    const existing = this.#registry.get(target);
+    if (!existing) {
+      // Fast path: store callback directly, no Set allocation
+      this.#registry.set(target, cb);
+      this.#finalizer.register(target, undefined, target);
       this.#size++;
+    } else if (typeof existing === 'function') {
+      if (existing !== cb) {
+        // Promote to Set on second callback
+        const set = new Set<ResizeCallback>();
+        set.add(existing);
+        set.add(cb);
+        this.#registry.set(target, set);
+      }
+    } else {
+      existing.add(cb);
     }
-    callbacks.add(cb);
+    // Always (re-)observe with the latest options.
+    // ResizeObserver.observe() updates options for already-observed targets.
+    this.#observer.observe(target, options);
   }
 
   /** Stop a specific callback from observing the target. */
   unobserve(target: Element, cb: ResizeCallback): void {
-    const callbacks = this.#registry.get(target);
-    if (!callbacks) return;
-    callbacks.delete(cb);
-    if (callbacks.size === 0) {
+    const existing = this.#registry.get(target);
+    if (!existing) return;
+
+    if (typeof existing === 'function') {
+      if (existing !== cb) return;
       this.#registry.delete(target);
       this.#finalizer.unregister(target);
       this.#observer.unobserve(target);
       this.#size--;
+    } else {
+      existing.delete(cb);
+      if (existing.size === 0) {
+        this.#registry.delete(target);
+        this.#finalizer.unregister(target);
+        this.#observer.unobserve(target);
+        this.#size--;
+      } else if (existing.size === 1) {
+        // Demote back to single callback — reclaim Set memory
+        const [remaining] = existing;
+        this.#registry.set(target, remaining!);
+      }
     }
   }
 
@@ -84,33 +110,36 @@ const poolRegistry = new WeakMap<Document | ShadowRoot, ObserverPool>();
 
 /**
  * Get or create the shared observer pool for the given root.
- * Uses `Promise.try()` (ES2026) for safe async-context creation
- * with synchronous return path.
+ *
+ * When a custom `ResizeObserver` constructor is provided (via context DI),
+ * a non-shared pool is created. This is intentional for testing and SSR
+ * where each Provider scope should be isolated.
  *
  * @param root - Document or ShadowRoot to scope the pool to.
- * @returns The shared `ObserverPool` for the given root.
+ * @param Ctor - Optional custom ResizeObserver constructor (from context).
+ * @returns The `ObserverPool` for the given root.
  * @internal
  */
-export const getSharedPool = (root: Document | ShadowRoot): ObserverPool => {
+export const getSharedPool = (
+  root: Document | ShadowRoot,
+  Ctor?: typeof ResizeObserver,
+): ObserverPool => {
+  // Custom constructor: create a dedicated pool (not shared)
+  if (Ctor !== undefined) {
+    return new ObserverPool(undefined, Ctor);
+  }
+
   const existing = poolRegistry.get(root);
   if (existing) return existing;
 
-  // Fire-and-forget: validates ResizeObserver availability asynchronously.
-  // Errors surface via console.error, not thrown to caller (sync return path).
-  //
-  // Promise.try() (ES2026) — safely wraps synchronous pool creation in a
-  // microtask-aware context, catching any constructor exceptions into a
-  // rejected promise for diagnostics while returning synchronously.
-  Promise.try(() => {
-    if (typeof globalThis.ResizeObserver === 'undefined') {
-      throw new Error(
+  if (typeof globalThis.ResizeObserver === 'undefined') {
+    console.error(
+      new Error(
         '[@crimson_dev/use-resize-observer] ResizeObserver is not available. ' +
           'Import the /shim entry or use the /server entry for SSR.',
-      );
-    }
-  }).catch((error: unknown) => {
-    console.error(Error.isError(error) ? error : new Error(String(error)));
-  });
+      ),
+    );
+  }
 
   const pool = new ObserverPool();
   poolRegistry.set(root, pool);

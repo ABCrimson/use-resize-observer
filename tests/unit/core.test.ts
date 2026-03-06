@@ -2,26 +2,32 @@ import { describe, expect, it, vi } from 'vitest';
 import { createResizeObservable, ResizeEvent, type ResizeEventDetail } from '../../src/core.js';
 
 const MockResizeObserver = (globalThis as Record<string, unknown>).MockResizeObserver as {
-  instances: Array<{
-    triggerResize: (entries: ResizeObserverEntry[]) => void;
-    observedTargets: Map<Element, ResizeObserverOptions>;
+  readonly instances: ReadonlyArray<{
+    triggerResize: (entries: ReadonlyArray<ResizeObserverEntry>) => void;
+    readonly observedTargets: Map<Element, ResizeObserverOptions>;
   }>;
   findObserverFor: (el: Element) =>
     | {
-        triggerResize: (entries: ResizeObserverEntry[]) => void;
-        observedTargets: Map<Element, ResizeObserverOptions>;
+        triggerResize: (entries: ReadonlyArray<ResizeObserverEntry>) => void;
+        readonly observedTargets: Map<Element, ResizeObserverOptions>;
       }
     | undefined;
   createEntry: (target: Element, width: number, height: number) => ResizeObserverEntry;
 };
 
+const lastInstance = () => {
+  const inst = MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
+  if (inst === undefined) throw new Error('No MockResizeObserver instance found');
+  return inst;
+};
+
 describe('ResizeEvent', () => {
   it('should create a custom event with resize detail', () => {
-    const detail: ResizeEventDetail = {
+    const detail = {
       width: 100,
       height: 50,
       entry: {} as ResizeObserverEntry,
-    };
+    } satisfies ResizeEventDetail;
     const event = new ResizeEvent(detail);
 
     expect(event.type).toBe('resize');
@@ -35,7 +41,7 @@ describe('ResizeEvent', () => {
       width: 0,
       height: 0,
       entry: {} as ResizeObserverEntry,
-    });
+    } satisfies ResizeEventDetail);
     expect(event).toBeInstanceOf(CustomEvent);
   });
 });
@@ -43,132 +49,113 @@ describe('ResizeEvent', () => {
 describe('createResizeObservable', () => {
   it('should return an object with disconnect and Symbol.dispose', () => {
     const el = document.createElement('div');
-    const observable = createResizeObservable(el);
+    using observable = createResizeObservable(el);
 
     expect(typeof observable.disconnect).toBe('function');
     expect(typeof observable[Symbol.dispose]).toBe('function');
     expect(typeof observable.addEventListener).toBe('function');
     expect(typeof observable.removeEventListener).toBe('function');
-
-    observable.disconnect();
   });
 
   it('should dispatch resize events via addEventListener', () => {
     const el = document.createElement('div');
     document.body.appendChild(el);
-    const observable = createResizeObservable(el);
+    using observable = createResizeObservable(el);
     const handler = vi.fn();
 
     observable.addEventListener('resize', handler as EventListener);
 
-    // Find the observer and trigger a resize
-    const observer = MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
-    if (observer) {
-      const entry = MockResizeObserver.createEntry(el, 640, 480);
-      observer.triggerResize([entry]);
-    }
+    const observer = lastInstance();
+    const entry = MockResizeObserver.createEntry(el, 640, 480);
+    observer.triggerResize([entry]);
 
     expect(handler).toHaveBeenCalledTimes(1);
     const event = handler.mock.calls[0]![0] as CustomEvent<ResizeEventDetail>;
     expect(event.detail.width).toBe(640);
     expect(event.detail.height).toBe(480);
 
-    observable.disconnect();
     document.body.removeChild(el);
   });
 
   it('should support using declaration pattern', () => {
     const el = document.createElement('div');
     using _observable = createResizeObservable(el);
-    // Observable is disposed when block exits
   });
 
   it('should accept border-box option', () => {
     const el = document.createElement('div');
-    const observable = createResizeObservable(el, { box: 'border-box' });
+    using observable = createResizeObservable(el, { box: 'border-box' as const });
     expect(typeof observable.disconnect).toBe('function');
     expect(typeof observable.addEventListener).toBe('function');
     expect(typeof observable.removeEventListener).toBe('function');
-    observable.disconnect();
   });
 
   it('should accept device-pixel-content-box option', () => {
     const el = document.createElement('div');
-    const observable = createResizeObservable(el, { box: 'device-pixel-content-box' });
+    using observable = createResizeObservable(el, { box: 'device-pixel-content-box' as const });
     expect(typeof observable.disconnect).toBe('function');
     expect(typeof observable.addEventListener).toBe('function');
-    observable.disconnect();
   });
 
   it('should default to content-box', () => {
     const el = document.createElement('div');
     document.body.appendChild(el);
-    const observable = createResizeObservable(el);
+    using observable = createResizeObservable(el);
     const handler = vi.fn();
     observable.addEventListener('resize', handler as EventListener);
 
-    const observer = MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
-    if (observer) {
-      const entry = MockResizeObserver.createEntry(el, 200, 100);
-      observer.triggerResize([entry]);
-    }
+    const observer = lastInstance();
+    const entry = MockResizeObserver.createEntry(el, 200, 100);
+    observer.triggerResize([entry]);
 
-    // Default content-box should use contentBoxSize dimensions
     expect(handler).toHaveBeenCalledTimes(1);
     const event = handler.mock.calls[0]![0] as CustomEvent<ResizeEventDetail>;
     expect(event.detail.width).toBe(200);
     expect(event.detail.height).toBe(100);
 
-    observable.disconnect();
     document.body.removeChild(el);
   });
 
   it('should dispatch events with correct dimensions for border-box', () => {
     const el = document.createElement('div');
     document.body.appendChild(el);
-    const observable = createResizeObservable(el, { box: 'border-box' });
+    using observable = createResizeObservable(el, { box: 'border-box' as const });
     const handler = vi.fn();
     observable.addEventListener('resize', handler as EventListener);
 
-    const observer = MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
-    if (observer) {
-      const entry = MockResizeObserver.createEntry(el, 1024, 768);
-      observer.triggerResize([entry]);
-    }
+    const observer = lastInstance();
+    const entry = MockResizeObserver.createEntry(el, 1024, 768);
+    observer.triggerResize([entry]);
 
     expect(handler).toHaveBeenCalledTimes(1);
     const event = handler.mock.calls[0]![0] as CustomEvent<ResizeEventDetail>;
     expect(event.detail.width).toBe(1024);
     expect(event.detail.height).toBe(768);
 
-    observable.disconnect();
     document.body.removeChild(el);
   });
 
   it('should handle empty size entries gracefully', () => {
     const el = document.createElement('div');
     document.body.appendChild(el);
-    const observable = createResizeObservable(el);
+    using observable = createResizeObservable(el);
     const handler = vi.fn();
     observable.addEventListener('resize', handler as EventListener);
 
-    const observer = MockResizeObserver.instances[MockResizeObserver.instances.length - 1];
-    if (observer) {
-      const entry: ResizeObserverEntry = {
-        target: el,
-        contentRect: new DOMRectReadOnly(0, 0, 0, 0),
-        borderBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
-        contentBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
-        devicePixelContentBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
-      };
-      observer.triggerResize([entry]);
-    }
+    const observer = lastInstance();
+    const entry = {
+      target: el,
+      contentRect: new DOMRectReadOnly(0, 0, 0, 0),
+      borderBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
+      contentBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
+      devicePixelContentBoxSize: [] as unknown as ReadonlyArray<ResizeObserverSize>,
+    } satisfies ResizeObserverEntry;
+    observer.triggerResize([entry]);
 
     const event = handler.mock.calls[0]![0] as CustomEvent<ResizeEventDetail>;
     expect(event.detail.width).toBe(0);
     expect(event.detail.height).toBe(0);
 
-    observable.disconnect();
     document.body.removeChild(el);
   });
 });

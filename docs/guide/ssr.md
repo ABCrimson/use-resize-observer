@@ -69,21 +69,12 @@ const mockResult = createServerResizeObserverMock<HTMLDivElement>();
 
 The mock returns `undefined` for all dimensions, matching the hook's initial state before the first measurement. This ensures your components render consistently between server and client on the initial pass.
 
-### Custom default dimensions
-
-You can provide default dimensions for server rendering:
+::: tip Avoiding layout shift
+You can spread the mock result and override dimensions to approximate the expected client size, reducing Cumulative Layout Shift (CLS):
 
 ```tsx
-const mockResult = createServerResizeObserverMock<HTMLDivElement>({
-  defaultWidth: 1024,
-  defaultHeight: 768,
-});
-// mockResult.width === 1024
-// mockResult.height === 768
+const result = { ...createServerResizeObserverMock<HTMLDivElement>(), width: 1024, height: 768 };
 ```
-
-::: tip Avoiding layout shift
-Providing default dimensions that approximate the expected client size can reduce Cumulative Layout Shift (CLS) by preventing a flash of "Measuring..." text before the first client-side measurement.
 :::
 
 ## Environment Detection
@@ -204,16 +195,18 @@ Use `ResizeObserverContext` as shown above. This is more explicit and does not p
 
 ## Worker Mode and SSR
 
-The worker observer (`createWorkerObserver`) is browser-only. Do not import it in server code. The `/worker` entry does not include `'use client'` because it should only be used in client-side initialization code:
+The worker hook (`useResizeObserverWorker`) is browser-only. The `/worker` entry includes `'use client'` and should only be used in client components:
 
 ```tsx
 'use client';
 
-import { useResizeObserver } from '@crimson_dev/use-resize-observer';
-import { createWorkerObserver } from '@crimson_dev/use-resize-observer/worker';
+import { useResizeObserverWorker } from '@crimson_dev/use-resize-observer/worker';
 
-// Safe: this module is client-only
-const workerObserver = createWorkerObserver({ maxElements: 256 });
+// Safe: this module is client-only via 'use client'
+const MyWorkerComponent = () => {
+  const { ref, width, height } = useResizeObserverWorker<HTMLDivElement>();
+  return <div ref={ref}>{width} x {height}</div>;
+};
 ```
 
 ## Next Steps

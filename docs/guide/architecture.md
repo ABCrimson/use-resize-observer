@@ -14,7 +14,7 @@ flowchart TB
 
     subgraph Pool["Shared Observer Pool"]
         RO["Single ResizeObserver"]
-        MAP["WeakMap<Element, Set<Callback>>"]
+        MAP["WeakMap<Element, Callback | Set<Callback>>"]
     end
 
     subgraph Scheduler["rAF Scheduler"]
@@ -39,9 +39,9 @@ Instead of creating one `ResizeObserver` per hook instance, all hook instances s
 ### How it works
 
 1. When `useResizeObserver` mounts, it registers the target element with the pool.
-2. The pool maintains a `WeakMap<Element, Set<Callback>>` to track which callbacks are interested in which elements.
+2. The pool maintains a `WeakMap<Element, Callback | Set<Callback>>` — storing a single callback directly (fast path) and only promoting to a `Set` when multiple callbacks observe the same element.
 3. A single `ResizeObserver` instance observes all registered elements.
-4. When the observer fires, entries are dispatched to the correct callbacks via the WeakMap lookup.
+4. When the observer fires, entries are dispatched to the correct callbacks via the WeakMap lookup. Single-callback entries skip Set iteration entirely.
 
 ```mermaid
 sequenceDiagram
@@ -51,16 +51,17 @@ sequenceDiagram
     participant DOM as Browser Layout
 
     Hook->>Pool: observe(element, { box }, callback)
-    Pool->>Pool: weakMap.get(element).add(callback)
+    Pool->>Pool: weakMap.set(element, callback) [fast path]
+    Note right of Pool: Promotes to Set on 2nd callback
     Pool->>RO: observe(element, { box })
 
     DOM->>RO: layout change detected
     RO->>Pool: callback(entries)
-    Pool->>Pool: for each entry, lookup callbacks
-    Pool->>Hook: invoke registered callback
+    Pool->>Pool: for each entry, lookup callback or Set
+    Pool->>Hook: invoke registered callback(s)
 
     Hook->>Pool: unobserve(element, callback)
-    Pool->>Pool: weakMap.get(element).delete(callback)
+    Pool->>Pool: delete or demote Set to single callback
     alt No more callbacks for element
         Pool->>RO: unobserve(element)
     end
@@ -82,18 +83,21 @@ Instead, we defer state updates to the next `requestAnimationFrame`:
 
 ```mermaid
 flowchart LR
-    RO["ResizeObserver\ncallback"] --> Q["Pending Queue\n(Map<Element, Entry>)"]
-    Q --> RAF["requestAnimationFrame"]
-    RAF --> ST["startTransition(() => {\n  flush all pending\n})"]
+    RO["ResizeObserver\ncallback"] --> BUF["Double Buffer\n(Map[active] XOR swap)"]
+    BUF --> RAF["requestAnimationFrame"]
+    RAF --> ST["startTransition(() => {\n  flush swapped buffer\n})"]
     ST --> R["Single React\nrender cycle"]
 ```
 
 ### The batching algorithm
 
-1. When the observer fires, entries are written to a pending `Map<Element, ResizeObserverEntry>`.
+1. When the observer fires, entries are written to the active buffer (`Map<Element, FlushEntry>`).
 2. If no rAF is scheduled, one is requested.
-3. On the next animation frame, all pending entries are flushed inside a single `startTransition` call.
-4. React batches all the resulting `setState` calls into one render.
+3. On the next animation frame, the active buffer is swapped via XOR (`active ^= 1`) — zero allocation.
+4. All pending entries are flushed inside a single `startTransition` call.
+5. React batches all the resulting `setState` calls into one render.
+
+The double-buffer swap means new resize events can accumulate in the fresh buffer while the previous buffer is being flushed. This eliminates per-flush `new Map()` allocation entirely.
 
 This means that even if 100 elements resize simultaneously (e.g., during a window resize), only **one React render cycle** occurs.
 
@@ -162,35 +166,39 @@ For the standard (non-worker) mode, the memory footprint per observed element is
 
 | Allocation | Size | Lifetime |
 |-----------|------|----------|
-| WeakMap entry | ~64B | Element lifetime |
-| Callback set entry | ~32B | Hook lifetime |
-| Pending queue entry | ~48B | Single frame |
+| WeakMap entry (single callback) | ~48B | Element lifetime |
+| WeakMap entry (promoted to Set) | ~96B | Element lifetime |
+| Double-buffer Map entry | ~48B | Single frame |
 
-There is no per-element `ResizeObserver` instance, no per-element closure for the observer callback, and no retained `ResizeObserverEntry` objects after the flush.
+There is no per-element `ResizeObserver` instance, no per-element closure for the observer callback, no retained `ResizeObserverEntry` objects after the flush, and no `new Map()` allocation on flush (buffers are reused via XOR swap).
 
 ## Worker Mode Architecture
 
-Worker mode adds an additional layer. See the [Worker Mode](/guide/worker) page for the full architecture, but in brief:
+Worker mode adds a `SharedArrayBuffer` layer for zero-copy data sharing. See the [Worker Mode](/guide/worker) page for the full architecture, but in brief:
+
+ResizeObserver is a DOM API and must run on the **main thread**. Worker mode uses a main-thread observer that writes measurements directly into a `SharedArrayBuffer` via `writeSlot()`. This SAB can then be read by compute workers (WebGL, WASM) without message passing.
 
 ```mermaid
 flowchart LR
     subgraph Main["Main Thread"]
-        RO["ResizeObserver"] --> SAB["SharedArrayBuffer\n(Float16Array view)"]
+        RO["ResizeObserver"] --> WRITE["writeSlot()\nFloat16Array + Atomics.store(dirty=1)"]
+        POLL["rAF poll loop"] --> CHECK["Atomics.load(dirty)"]
+        CHECK -->|dirty=1| READ["readSlot()\nFloat16Array + Atomics.store(dirty=0)"]
+        CHECK -->|dirty=0| SKIP["Skip frame"]
+        READ --> ST["setState()"]
     end
 
-    subgraph Worker["Web Worker"]
-        SAB --> READ["Atomics.load()"]
-        READ --> PROC["Process measurements"]
-        PROC --> POST["postMessage(results)"]
+    subgraph Workers["Compute Workers (optional)"]
+        CW["WebGL / WASM"] --> SAB_READ["Atomics.load / wait\nread SAB directly"]
     end
 
-    POST --> ST["startTransition\nstate update"]
+    WRITE -.-> SAB_READ
 ```
 
-The `SharedArrayBuffer` is divided into slots, one per observed element. The main thread writes measurements via `Float16Array` view (4 bytes per dimension), and the worker reads them without any message-passing overhead for the raw data.
+The `SharedArrayBuffer` (3,072 bytes) is divided into two regions: bytes 0--1023 for `Int32Array` dirty flags and bytes 1024--3071 for `Float16Array` measurement data (8 bytes per slot, 4 x Float16). The main-thread observer writes measurements and sets dirty flags via `Atomics.store()`. The rAF poll loop reads and calls `setState` only when dirty -- skipping unchanged frames entirely. Compute workers can also read the SAB directly for real-time layout data.
 
 ## Next Steps
 
 - [Performance](/guide/performance) -- Benchmark data proving the architecture's benefits
-- [Worker Mode](/guide/worker) -- Deep dive into the off-main-thread architecture
-- [Bundle Size](/guide/bundle-size) -- How tree-shaking keeps the main entry at 1.04 kB
+- [Worker Mode](/guide/worker) -- Deep dive into SAB-based measurement sharing
+- [Bundle Size](/guide/bundle-size) -- How tree-shaking keeps the main entry at 1.12 kB

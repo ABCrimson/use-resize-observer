@@ -248,7 +248,7 @@ If `Float16Array` is not available, worker mode automatically falls back to `Flo
 **Cause:** Importing from the wrong entry point or importing worker/server code alongside the main hook.
 
 ```typescript
-// CORRECT: tree-shakeable import (1.04 kB gzip)
+// CORRECT: tree-shakeable import (1.12 kB gzip)
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 ```
 

@@ -250,12 +250,12 @@ Each `ShadowRoot` gets its own `ObserverPool` instance, preventing cross-contami
 | `createResizeObserver` | Main | Any | Factory / vanilla JS |
 | `ResizeObserverContext` | Main | React | DI / testing / SSR |
 | `createResizeObservable` | `/core` | Any | EventTarget-based observable |
-| `createWorkerObserver` | `/worker` | Any | Off-main-thread measurements |
+| `useResizeObserverWorker` | `/worker` | React | SAB-based measurement sharing |
 | `createServerResizeObserverMock` | `/server` | React | SSR/RSC mock |
 | `roundToDevicePixel` | `/shim` | Any | Pixel-precise rounding |
 
 ## Next Steps
 
 - [Examples](/guide/examples) -- Real-world usage patterns for each API
-- [Worker Mode](/guide/worker) -- Deep dive on `createWorkerObserver`
+- [Worker Mode](/guide/worker) -- Deep dive on `useResizeObserverWorker`
 - [SSR & RSC](/guide/ssr) -- Server-side usage with `ResizeObserverContext`

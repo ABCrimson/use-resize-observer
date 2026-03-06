@@ -26,7 +26,7 @@ Most ResizeObserver hooks in the ecosystem share these shortcomings:
 |---------|---------------|--------------|
 | Observer instances | 1 per hook | 1 shared pool |
 | Render batching | None | rAF + startTransition |
-| Bundle size | ~1.2KB gzip | 1.04 kB gzip |
+| Bundle size | ~1.2KB gzip | 1.12 kB gzip |
 | Module format | CJS + ESM | ESM only |
 | Worker support | None | SharedArrayBuffer + Float16Array |
 | React version | 16.8+ | 19.3+ |
@@ -37,7 +37,7 @@ Most ResizeObserver hooks in the ecosystem share these shortcomings:
 
 ### ESNext-First
 
-We target ES2026 and let your bundler handle downleveling. This means we can use `using` declarations for automatic cleanup, `Float16Array` for compact worker buffers, `Iterator.prototype` methods for pool management, and `Promise.try()` for error boundaries.
+We target ES2026 and let your bundler handle downleveling. This means we can use `using` declarations for automatic cleanup, `Float16Array` for compact worker buffers, `Atomics` for cross-thread dirty-flag protocols, `FinalizationRegistry` for GC-backed cleanup, and `Promise.withResolvers()` for worker initialization.
 
 ### Zero Dependencies
 
@@ -56,7 +56,7 @@ The library compiles under the strictest possible TypeScript 6 configuration:
 Every callback passed to the hook is wrapped with `useEffectEvent` semantics. The React Compiler can freely memoize components that use `useResizeObserver` without any manual `useMemo` or `useCallback` annotations.
 
 ::: tip When to choose this library
-If you are on React 19.3+ and care about bundle size, render performance, or worker-offloaded measurements, this library is designed for you. If you need React 16/17/18 support, the upstream `use-resize-observer` remains the better choice.
+If you are on React 19.3+ and care about bundle size, render performance, or SAB-based measurement sharing with compute workers, this library is designed for you. If you need React 16/17/18 support, the upstream `use-resize-observer` remains the better choice.
 :::
 
 ## Further Reading

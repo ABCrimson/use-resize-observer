@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { extractDimensions } from './extract.js';
+import { useResizeObserverConstructor } from './context.js';
+import { extractBoxSize } from './extract.js';
 import { getSharedPool } from './pool.js';
 import type {
   ResizeCallback,
@@ -26,7 +27,7 @@ interface ObserverState {
  * - `requestAnimationFrame` batching with `startTransition` wrapping
  * - GC-backed cleanup via `FinalizationRegistry`
  * - React Compiler-safe (stable callback identity via ref pattern)
- * - Sub-1.1 kB gzip bundle contribution
+ * - Context DI: respects `ResizeObserverContext` for custom constructors
  *
  * @param options - Configuration options.
  * @returns Ref, width, height, and raw entry.
@@ -41,14 +42,13 @@ export const useResizeObserver = <T extends Element = Element>(
   options: UseResizeObserverOptions<T> = {},
 ): UseResizeObserverResult<T> => {
   const { ref: externalRef, box = 'content-box', root, onResize } = options;
+  const ResizeObserverCtor = useResizeObserverConstructor();
 
   const internalRef = useRef<T | null>(null);
   const targetRef = externalRef ?? internalRef;
 
   const [state, setState] = useState<ObserverState | undefined>(undefined);
 
-  // Stable callback ref — survives re-renders without triggering re-observation.
-  // Follows useEffectEvent semantics: latest closure captured, identity stable.
   const onResizeRef = useRef(onResize);
   onResizeRef.current = onResize;
 
@@ -59,11 +59,15 @@ export const useResizeObserver = <T extends Element = Element>(
     const element = targetRef.current;
     if (!element) return;
 
-    const observerRoot = root ?? element.ownerDocument;
-    const pool = getSharedPool(observerRoot);
+    const observerRoot = root !== undefined ? root : element.ownerDocument;
+    // Pass custom constructor only when it differs from the global
+    const isCustomCtor = ResizeObserverCtor !== globalThis.ResizeObserver;
+    const pool = getSharedPool(observerRoot, isCustomCtor ? ResizeObserverCtor : undefined);
 
     const callback: ResizeCallback = (resizeEntry) => {
-      const { width: w, height: h } = extractDimensions(resizeEntry, boxRef.current);
+      const size = extractBoxSize(resizeEntry, boxRef.current);
+      const w = size !== undefined ? size.inlineSize : 0;
+      const h = size !== undefined ? size.blockSize : 0;
       setState({ width: w, height: h, entry: resizeEntry });
       onResizeRef.current?.(resizeEntry);
     };
@@ -73,7 +77,7 @@ export const useResizeObserver = <T extends Element = Element>(
     return () => {
       pool.unobserve(element, callback);
     };
-  }, [targetRef, box, root]);
+  }, [targetRef, box, root, ResizeObserverCtor]);
 
   return {
     ref: targetRef,

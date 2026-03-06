@@ -31,5 +31,5 @@ ResizeObserverContext.displayName = 'ResizeObserverContext';
  */
 export const useResizeObserverConstructor = (): typeof ResizeObserver => {
   const contextValue = useContext(ResizeObserverContext);
-  return contextValue ?? globalThis.ResizeObserver;
+  return contextValue !== null ? contextValue : globalThis.ResizeObserver;
 };

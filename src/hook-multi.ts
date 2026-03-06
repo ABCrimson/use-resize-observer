@@ -3,6 +3,7 @@
 import type { RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useResizeObserverConstructor } from './context.js';
 import { extractBoxSize } from './extract.js';
 import { getSharedPool } from './pool.js';
 import type { ResizeCallback, ResizeObserverBoxOptions } from './types.js';
@@ -42,47 +43,49 @@ export const useResizeObserverEntries = (
   options: UseResizeObserverEntriesOptions = {},
 ): Map<Element, ResizeEntry> => {
   const { box = 'content-box', root } = options;
+  const ResizeObserverCtor = useResizeObserverConstructor();
   const [entries, setEntries] = useState<Map<Element, ResizeEntry>>(new Map());
   const boxRef = useRef(box);
   boxRef.current = box;
 
   useEffect(() => {
-    // Track observed pairs for cleanup — avoids separate closure array
-    const observed: Array<readonly [Element, ResizeCallback]> = [];
+    const observed: Array<readonly [Element, ResizeCallback, import('./pool.js').ObserverPool]> =
+      [];
+    const ctorArg =
+      ResizeObserverCtor !== globalThis.ResizeObserver ? ResizeObserverCtor : undefined;
 
     for (const ref of refs) {
       const element = ref.current;
       if (!element) continue;
 
-      const observerRoot = root ?? element.ownerDocument;
-      const pool = getSharedPool(observerRoot);
+      const observerRoot = root !== undefined ? root : element.ownerDocument;
+      const pool = getSharedPool(observerRoot, ctorArg);
       const currentBox = boxRef.current;
 
       const callback: ResizeCallback = (resizeEntry) => {
         const sizeEntry = extractBoxSize(resizeEntry, currentBox);
+        const w = sizeEntry !== undefined ? sizeEntry.inlineSize : 0;
+        const h = sizeEntry !== undefined ? sizeEntry.blockSize : 0;
 
         setEntries((prev) => {
+          const existing = prev.get(element);
+          if (existing !== undefined && existing.width === w && existing.height === h) return prev;
           const next = new Map(prev);
-          next.set(element, {
-            width: sizeEntry?.inlineSize ?? 0,
-            height: sizeEntry?.blockSize ?? 0,
-            entry: resizeEntry,
-          });
+          next.set(element, { width: w, height: h, entry: resizeEntry });
           return next;
         });
       };
 
       pool.observe(element, { box: currentBox }, callback);
-      observed.push([element, callback] as const);
+      observed.push([element, callback, pool] as const);
     }
 
     return () => {
-      for (const [element, callback] of observed) {
-        const observerRoot = root ?? element.ownerDocument;
-        getSharedPool(observerRoot).unobserve(element, callback);
+      for (const [element, callback, pool] of observed) {
+        pool.unobserve(element, callback);
       }
     };
-  }, [refs, root]);
+  }, [refs, root, ResizeObserverCtor]);
 
   return entries;
 };

@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { Bench } from 'tinybench';
+import { Bench, type BenchOptions } from 'tinybench';
 
 // Mock startTransition for Node environment
 const React = { startTransition: (fn: () => void) => fn() };
@@ -16,7 +16,7 @@ const { RafScheduler } = await import('../src/scheduler.js');
 const bench = new Bench({
   time: 1000,
   warmupTime: 500,
-});
+} as const satisfies BenchOptions);
 
 const createMockEntry = (target: Element): ResizeObserverEntry =>
   ({
@@ -27,7 +27,6 @@ const createMockEntry = (target: Element): ResizeObserverEntry =>
     devicePixelContentBoxSize: [{ inlineSize: 200, blockSize: 100 }],
   }) as unknown as ResizeObserverEntry;
 
-/** Shared singleton callback set — avoids allocation per schedule call. */
 const singleCbSet: ReadonlySet<() => void> = new Set([() => {}]);
 
 bench.add('RafScheduler — schedule 100 elements', () => {

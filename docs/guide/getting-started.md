@@ -32,7 +32,7 @@ const MyComponent = () => {
 
 | Feature | Value |
 |---------|-------|
-| Bundle size | 1.04 kB min+gzip |
+| Bundle size | 1.12 kB min+gzip |
 | Runtime dependencies | 0 |
 | React version | >= 19.3.0 |
 | Module format | ESM only |
@@ -75,5 +75,5 @@ const MyComponent = () => {
 
 - [Architecture](/guide/architecture) — How the shared pool works
 - [Box Models](/guide/box-models) — content-box vs border-box vs device-pixel-content-box
-- [Worker Mode](/guide/worker) — Move measurements off the main thread
+- [Worker Mode](/guide/worker) — Share measurements via SharedArrayBuffer
 - [SSR & RSC](/guide/ssr) — Server-side rendering support

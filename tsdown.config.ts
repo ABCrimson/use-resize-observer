@@ -13,7 +13,7 @@ export default defineConfig({
   clean: true,
   dts: true,
   sourcemap: true,
-  minify: process.env['NODE_ENV'] === 'production',
+  minify: process.env.NODE_ENV === 'production',
   treeshake: true,
   target: 'esnext',
   platform: 'browser',
@@ -21,11 +21,10 @@ export default defineConfig({
     neverBundle: ['react', 'react-dom'],
   },
   define: {
-    'import.meta.env.VERSION': JSON.stringify(process.env['npm_package_version'] ?? '0.0.0'),
+    'import.meta.env.VERSION': JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
   },
-  banner: {
-    js: `'use client';`,
-  },
+  // No global 'use client' banner — source files have the directive where needed.
+  // server.ts and core.ts must NOT have 'use client' (server-side / framework-agnostic).
   splitting: true,
   chunkNames: 'chunks/[name]-[hash]',
   report: true,

@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { Bench } from 'tinybench';
+import { Bench, type BenchOptions } from 'tinybench';
 
 // Mock ResizeObserver for Node benchmark environment
 globalThis.ResizeObserver = class {
@@ -20,13 +20,12 @@ globalThis.cancelAnimationFrame = () => {};
 
 const { ObserverPool } = await import('../src/pool.js');
 
-/** Shared empty options object — avoids allocation per iteration. */
 const emptyOpts: ResizeObserverOptions = {};
 
 const bench = new Bench({
   time: 1000,
   warmupTime: 500,
-});
+} as const satisfies BenchOptions);
 
 bench.add('ObserverPool.observe() throughput', () => {
   using pool = new ObserverPool();

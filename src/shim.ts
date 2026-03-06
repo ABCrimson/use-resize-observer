@@ -60,28 +60,30 @@ class ResizeObserverShim {
 
   #checkForChanges(): void {
     const entries: ResizeObserverEntry[] = [];
-    const dpr = globalThis.devicePixelRatio ?? 1;
+    const dpr = globalThis.devicePixelRatio !== undefined ? globalThis.devicePixelRatio : 1;
 
     for (const target of this.#targets) {
       const rect = target.getBoundingClientRect();
       const last = this.#lastSizes.get(target);
+      const w = rect.width;
+      const h = rect.height;
 
-      if (!last || last.width !== rect.width || last.height !== rect.height) {
-        this.#lastSizes.set(target, { width: rect.width, height: rect.height });
+      if (last === undefined || last.width !== w || last.height !== h) {
+        this.#lastSizes.set(target, { width: w, height: h });
 
         entries.push({
           target,
           contentRect: rect,
           borderBoxSize: [
-            { inlineSize: rect.width, blockSize: rect.height },
+            { inlineSize: w, blockSize: h },
           ] as unknown as ReadonlyArray<ResizeObserverSize>,
           contentBoxSize: [
-            { inlineSize: rect.width, blockSize: rect.height },
+            { inlineSize: w, blockSize: h },
           ] as unknown as ReadonlyArray<ResizeObserverSize>,
           devicePixelContentBoxSize: [
             {
-              inlineSize: rect.width * dpr,
-              blockSize: rect.height * dpr,
+              inlineSize: w * dpr,
+              blockSize: h * dpr,
             },
           ] as unknown as ReadonlyArray<ResizeObserverSize>,
         } satisfies ResizeObserverEntry);

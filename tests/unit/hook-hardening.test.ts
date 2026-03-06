@@ -4,27 +4,26 @@ import { useResizeObserver } from '../../src/hook.js';
 
 const flushRaf = (globalThis as Record<string, unknown>).flushRaf as () => void;
 const MockResizeObserver = (globalThis as Record<string, unknown>).MockResizeObserver as {
-  instances: Array<{
-    triggerResize: (entries: ResizeObserverEntry[]) => void;
-    observedTargets: Map<Element, ResizeObserverOptions>;
+  readonly instances: ReadonlyArray<{
+    triggerResize: (entries: ReadonlyArray<ResizeObserverEntry>) => void;
+    readonly observedTargets: Map<Element, ResizeObserverOptions>;
   }>;
-  allInstances: Array<{
-    triggerResize: (entries: ResizeObserverEntry[]) => void;
-    observedTargets: Map<Element, ResizeObserverOptions>;
+  readonly allInstances: ReadonlyArray<{
+    triggerResize: (entries: ReadonlyArray<ResizeObserverEntry>) => void;
+    readonly observedTargets: Map<Element, ResizeObserverOptions>;
   }>;
   findObserverFor: (el: Element) =>
     | {
-        triggerResize: (entries: ResizeObserverEntry[]) => void;
-        observedTargets: Map<Element, ResizeObserverOptions>;
+        triggerResize: (entries: ReadonlyArray<ResizeObserverEntry>) => void;
+        readonly observedTargets: Map<Element, ResizeObserverOptions>;
       }
     | undefined;
   createEntry: (target: Element, width: number, height: number) => ResizeObserverEntry;
 };
 
-/** Helper: trigger resize on the observer watching the given element. */
 const triggerResizeOn = (el: Element, width: number, height: number): void => {
   const observer = MockResizeObserver.findObserverFor(el);
-  if (!observer) throw new Error('No observer found for element');
+  if (observer === undefined) throw new Error('No observer found for element');
   const entry = MockResizeObserver.createEntry(el, width, height);
   observer.triggerResize([entry]);
 };
@@ -170,8 +169,8 @@ describe('useResizeObserver — hardening', () => {
       flushRaf();
     });
 
-    expect(result.current.entry).toBeDefined();
-    expect(result.current.entry?.target).toBe(el);
+    expect(result.current.entry !== undefined).toBe(true);
+    expect(result.current.entry!.target).toBe(el);
 
     document.body.removeChild(el);
   });
@@ -251,5 +250,102 @@ describe('useResizeObserver — hardening', () => {
     const firstRef = result.current.ref;
     rerender();
     expect(result.current.ref).toBe(firstRef);
+  });
+
+  it('should re-observe with new box option when changing from content-box to border-box (Issue 15)', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const externalRef = { current: el };
+
+    const { rerender } = renderHook(
+      ({ box }) =>
+        useResizeObserver<HTMLDivElement>({
+          ref: externalRef as React.RefObject<HTMLDivElement | null>,
+          box,
+        }),
+      { initialProps: { box: 'content-box' as const } },
+    );
+
+    // Verify initial observation with content-box
+    const observerBefore = MockResizeObserver.findObserverFor(el);
+    expect(observerBefore).toBeDefined();
+    const optsBefore = observerBefore!.observedTargets.get(el);
+    expect(optsBefore !== undefined).toBe(true);
+    expect(optsBefore!.box).toBe('content-box');
+
+    // Change to border-box — effect should re-run and re-observe
+    rerender({ box: 'border-box' as const });
+
+    const observerAfter = MockResizeObserver.findObserverFor(el);
+    expect(observerAfter).toBeDefined();
+    const optsAfter = observerAfter!.observedTargets.get(el);
+    expect(optsAfter !== undefined).toBe(true);
+    expect(optsAfter!.box).toBe('border-box');
+
+    document.body.removeChild(el);
+  });
+
+  it('should call observer.observe() again when box changes to device-pixel-content-box (Issue 15)', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const externalRef = { current: el };
+
+    const { rerender } = renderHook(
+      ({ box }) =>
+        useResizeObserver<HTMLDivElement>({
+          ref: externalRef as React.RefObject<HTMLDivElement | null>,
+          box,
+        }),
+      { initialProps: { box: 'content-box' as const } },
+    );
+
+    // Switch through multiple box options
+    rerender({ box: 'border-box' as const });
+    rerender({ box: 'device-pixel-content-box' as const });
+
+    const observer = MockResizeObserver.findObserverFor(el);
+    expect(observer).toBeDefined();
+    const opts = observer!.observedTargets.get(el);
+    expect(opts !== undefined).toBe(true);
+    expect(opts!.box).toBe('device-pixel-content-box');
+
+    document.body.removeChild(el);
+  });
+
+  it('should receive correct dimensions after box option change (Issue 15)', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const externalRef = { current: el };
+
+    const { result, rerender } = renderHook(
+      ({ box }) =>
+        useResizeObserver<HTMLDivElement>({
+          ref: externalRef as React.RefObject<HTMLDivElement | null>,
+          box,
+        }),
+      { initialProps: { box: 'content-box' as const } },
+    );
+
+    // Trigger with content-box
+    act(() => {
+      triggerResizeOn(el, 200, 100);
+      flushRaf();
+    });
+    expect(result.current.width).toBe(200);
+    expect(result.current.height).toBe(100);
+
+    // Switch to border-box and trigger new resize
+    rerender({ box: 'border-box' as const });
+
+    act(() => {
+      triggerResizeOn(el, 220, 120);
+      flushRaf();
+    });
+
+    // Should get border-box dimensions
+    expect(result.current.width).toBe(220);
+    expect(result.current.height).toBe(120);
+
+    document.body.removeChild(el);
   });
 });

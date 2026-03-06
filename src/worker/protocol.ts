@@ -1,37 +1,53 @@
 /**
- * SharedArrayBuffer protocol for Worker-based resize observations.
+ * SharedArrayBuffer protocol for resize observations with cross-thread sharing.
  *
- * Layout:
- * - 4 Float16 values per element slot (2 bytes each = 8 bytes per slot)
- * - Int32Array overlay for `Atomics.notify()` / `Atomics.waitAsync()` synchronization
- * - Supports up to 256 simultaneous element observations
+ * Memory layout (3072 bytes total):
+ * - Bytes 0–1023: Int32 dirty flags (256 × 4B), one per slot
+ * - Bytes 1024–3071: Float16 data (256 × 8B), 4 values per slot
+ *
+ * The dirty flag region and data region are fully separated to prevent
+ * Int32Array/Float16Array view collisions.
  *
  * @internal
  */
 
 /** Bytes per observation slot: 4 x Float16 (2 bytes each) = 8 bytes. */
-export const SLOT_BYTES: number = 8;
+export const SLOT_BYTES = 8 as const;
 
 /** Maximum number of simultaneously observable elements. */
-export const MAX_ELEMENTS: number = 256;
+export const MAX_ELEMENTS = 256 as const;
 
-/** Total SharedArrayBuffer size in bytes. */
-export const SAB_SIZE: number = SLOT_BYTES * MAX_ELEMENTS;
+/** Bytes reserved for Int32 dirty flags: MAX_ELEMENTS × 4 bytes. */
+export const DIRTY_REGION_BYTES: number = MAX_ELEMENTS * 4;
+
+/** Byte offset where Float16 data slots begin (after dirty flag region). */
+export const DATA_OFFSET: number = DIRTY_REGION_BYTES;
+
+/**
+ * Total SharedArrayBuffer size in bytes.
+ * Layout: [dirty flags: 1024B] [float data: 2048B] = 3072B
+ */
+export const SAB_SIZE: number = DATA_OFFSET + SLOT_BYTES * MAX_ELEMENTS;
 
 /** Offsets within a single Float16Array slot. */
-export const SlotOffset = {
+export const SlotOffset: {
+  readonly InlineSize: 0;
+  readonly BlockSize: 1;
+  readonly BorderInline: 2;
+  readonly BorderBlock: 3;
+} = {
   InlineSize: 0,
   BlockSize: 1,
   BorderInline: 2,
   BorderBlock: 3,
-} as const;
+} as const satisfies Record<string, number>;
 
 export type SlotOffsetKey = keyof typeof SlotOffset;
 
 /** Discriminated union of all Worker protocol messages. */
 export type WorkerMessage =
   | { readonly op: 'init'; readonly sab: SharedArrayBuffer }
-  | { readonly op: 'observe'; readonly slotId: number; readonly elementId: string }
+  | { readonly op: 'observe'; readonly slotId: number }
   | { readonly op: 'unobserve'; readonly slotId: number }
   | { readonly op: 'terminate' }
   | { readonly op: 'ready' }
@@ -39,35 +55,39 @@ export type WorkerMessage =
 
 /**
  * Write resize measurements into a SharedArrayBuffer slot.
- * Uses `Float16Array` (ES2026) for compact storage and
+ * Uses `Float16Array` (ES2026) for compact 2-byte storage and
  * `Atomics.notify()` for cross-thread signaling.
  *
- * @param sab - SharedArrayBuffer backing the measurement protocol.
- * @param slotId - Zero-based slot index for this element.
- * @param entry - ResizeObserverEntry from the Worker's observer.
+ * Direct indexed writes avoid intermediate object allocation.
+ *
+ * @internal
  */
 export const writeSlot = (
   sab: SharedArrayBuffer,
   slotId: number,
   entry: ResizeObserverEntry,
 ): void => {
-  const view = new Float16Array(sab, slotId * SLOT_BYTES, 4);
+  const view = new Float16Array(sab, DATA_OFFSET + slotId * SLOT_BYTES, 4);
   const cs = entry.contentBoxSize[0];
   const bs = entry.borderBoxSize[0];
-  view[SlotOffset.InlineSize] = cs?.inlineSize ?? 0;
-  view[SlotOffset.BlockSize] = cs?.blockSize ?? 0;
-  view[SlotOffset.BorderInline] = bs?.inlineSize ?? 0;
-  view[SlotOffset.BorderBlock] = bs?.blockSize ?? 0;
-  // Signal main thread that new data is available
-  Atomics.notify(new Int32Array(sab), slotId, 1);
+
+  // Direct indexed assignment — no intermediate objects, no optional chaining
+  view[0] = cs !== undefined ? cs.inlineSize : 0;
+  view[1] = cs !== undefined ? cs.blockSize : 0;
+  view[2] = bs !== undefined ? bs.inlineSize : 0;
+  view[3] = bs !== undefined ? bs.blockSize : 0;
+
+  // Signal main thread with Atomics for guaranteed cross-thread visibility
+  const int32 = new Int32Array(sab);
+  Atomics.store(int32, slotId, 1);
+  Atomics.notify(int32, slotId, 1);
 };
 
 /**
  * Read resize measurements from a SharedArrayBuffer slot.
+ * Returns a frozen object for immutability guarantees.
  *
- * @param sab - SharedArrayBuffer backing the measurement protocol.
- * @param slotId - Zero-based slot index for this element.
- * @returns Measurement object with width, height, and border dimensions.
+ * @internal
  */
 export const readSlot = (
   sab: SharedArrayBuffer,
@@ -78,21 +98,28 @@ export const readSlot = (
   readonly borderWidth: number;
   readonly borderHeight: number;
 } => {
-  const view = new Float16Array(sab, slotId * SLOT_BYTES, 4);
+  const view = new Float16Array(sab, DATA_OFFSET + slotId * SLOT_BYTES, 4);
+
+  // Clear the dirty flag after reading
+  Atomics.store(new Int32Array(sab), slotId, 0);
+
+  const w = view[0];
+  const h = view[1];
+  const bw = view[2];
+  const bh = view[3];
   return {
-    width: view[SlotOffset.InlineSize] ?? 0,
-    height: view[SlotOffset.BlockSize] ?? 0,
-    borderWidth: view[SlotOffset.BorderInline] ?? 0,
-    borderHeight: view[SlotOffset.BorderBlock] ?? 0,
+    width: w !== undefined ? w : 0,
+    height: h !== undefined ? h : 0,
+    borderWidth: bw !== undefined ? bw : 0,
+    borderHeight: bh !== undefined ? bh : 0,
   };
 };
 
 /**
  * Allocate a slot from the bitmap tracker.
- * Uses `Int32Array.prototype.indexOf()` for fast native-code scan.
+ * Uses `Int32Array.prototype.indexOf()` for V8-native optimized scan.
  *
- * @param bitmap - Int32Array tracking allocated slots (1 = in use).
- * @returns The allocated slot index, or -1 if all slots are in use.
+ * @internal
  */
 export const allocateSlot = (bitmap: Int32Array): number => {
   const i = bitmap.indexOf(0);
@@ -103,8 +130,7 @@ export const allocateSlot = (bitmap: Int32Array): number => {
 /**
  * Release a slot back to the bitmap tracker.
  *
- * @param bitmap - Int32Array tracking allocated slots.
- * @param slotId - The slot index to release.
+ * @internal
  */
 export const releaseSlot = (bitmap: Int32Array, slotId: number): void => {
   if (slotId >= 0 && slotId < MAX_ELEMENTS) {
