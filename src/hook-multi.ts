@@ -49,8 +49,7 @@ export const useResizeObserverEntries = (
   boxRef.current = box;
 
   useEffect(() => {
-    const observed: Array<readonly [Element, ResizeCallback, import('./pool.js').ObserverPool]> =
-      [];
+    const observed: (readonly [Element, ResizeCallback, import('./pool.js').ObserverPool])[] = [];
     const ctorArg =
       ResizeObserverCtor !== globalThis.ResizeObserver ? ResizeObserverCtor : undefined;
 
@@ -58,14 +57,14 @@ export const useResizeObserverEntries = (
       const element = ref.current;
       if (!element) continue;
 
-      const observerRoot = root !== undefined ? root : element.ownerDocument;
+      const observerRoot = root ?? element.ownerDocument;
       const pool = getSharedPool(observerRoot, ctorArg);
       const currentBox = boxRef.current;
 
       const callback: ResizeCallback = (resizeEntry) => {
         const sizeEntry = extractBoxSize(resizeEntry, currentBox);
-        const w = sizeEntry !== undefined ? sizeEntry.inlineSize : 0;
-        const h = sizeEntry !== undefined ? sizeEntry.blockSize : 0;
+        const w = sizeEntry?.inlineSize ?? 0;
+        const h = sizeEntry?.blockSize ?? 0;
 
         setEntries((prev) => {
           const existing = prev.get(element);

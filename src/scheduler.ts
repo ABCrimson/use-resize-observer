@@ -27,8 +27,8 @@ interface FlushEntry {
  * @internal
  */
 export class RafScheduler implements Disposable {
-  #buffers: [Map<Element, FlushEntry>, Map<Element, FlushEntry>] = [new Map(), new Map()];
-  #active = 0;
+  readonly #buffers = [new Map<Element, FlushEntry>(), new Map<Element, FlushEntry>()] as const;
+  #active: 0 | 1 = 0;
   #rafId: number | null = null;
 
   /** Enqueue a resize observation for the next rAF flush. */
@@ -37,7 +37,7 @@ export class RafScheduler implements Disposable {
     entry: ResizeObserverEntry,
     cbs: ResizeCallback | ReadonlySet<ResizeCallback>,
   ): void {
-    this.#buffers[this.#active]!.set(target, { callbacks: cbs, entry });
+    this.#buffers[this.#active].set(target, { callbacks: cbs, entry });
     this.#requestFlush();
   }
 
@@ -51,8 +51,8 @@ export class RafScheduler implements Disposable {
 
   #flush(): void {
     // Swap buffers — zero allocation, O(1) operation
-    const flushing = this.#buffers[this.#active]!;
-    this.#active ^= 1;
+    const flushing = this.#buffers[this.#active];
+    this.#active = (this.#active ^ 1) as 0 | 1;
 
     startTransition(() => {
       for (const { callbacks, entry } of flushing.values()) {
@@ -76,8 +76,8 @@ export class RafScheduler implements Disposable {
       cancelAnimationFrame(this.#rafId);
       this.#rafId = null;
     }
-    this.#buffers[0]!.clear();
-    this.#buffers[1]!.clear();
+    this.#buffers[0].clear();
+    this.#buffers[1].clear();
   }
 
   /** Disposable contract (ES2026 explicit resource management). */

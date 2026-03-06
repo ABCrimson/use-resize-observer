@@ -49,9 +49,7 @@ const ensureSharedState = (): SharedArrayBuffer => {
 
   if (!globalThis.crossOriginIsolated) {
     throw new Error(
-      '[@crimson_dev/use-resize-observer/worker] ' +
-        'crossOriginIsolated is false. Worker mode requires COOP/COEP headers. ' +
-        'See: https://developer.mozilla.org/en-US/docs/Web/API/crossOriginIsolated',
+      `[@crimson_dev/use-resize-observer/worker] crossOriginIsolated is false. Worker mode requires COOP/COEP headers. See: https://developer.mozilla.org/en-US/docs/Web/API/crossOriginIsolated`,
     );
   }
 
@@ -134,8 +132,7 @@ export const useResizeObserverWorker = <T extends Element = Element>(
     const slotId = allocateSlot(slotBitmap);
     if (slotId === -1) {
       console.error(
-        `[@crimson_dev/use-resize-observer/worker] ` +
-          `Maximum ${String(MAX_ELEMENTS)} simultaneous observations exceeded.`,
+        `[@crimson_dev/use-resize-observer/worker] Maximum ${MAX_ELEMENTS} simultaneous observations exceeded.`,
       );
       return;
     }

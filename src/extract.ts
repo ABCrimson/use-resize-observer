@@ -15,8 +15,7 @@ export const extractBoxSize = (
   if (box === 'content-box') return entry.contentBoxSize[0];
   if (box === 'border-box') return entry.borderBoxSize[0];
   // device-pixel-content-box — fallback to contentBoxSize when unavailable
-  const dpcb = entry.devicePixelContentBoxSize;
-  return (dpcb !== undefined && dpcb !== null ? dpcb : entry.contentBoxSize)[0];
+  return (entry.devicePixelContentBoxSize ?? entry.contentBoxSize)[0];
 };
 
 /**
@@ -29,7 +28,8 @@ export const extractDimensions = (
   box: ResizeObserverBoxOptions,
 ): { readonly width: number; readonly height: number } => {
   const size = extractBoxSize(entry, box);
-  return size !== undefined
-    ? { width: size.inlineSize, height: size.blockSize }
-    : { width: 0, height: 0 };
+  return {
+    width: size?.inlineSize ?? 0,
+    height: size?.blockSize ?? 0,
+  };
 };

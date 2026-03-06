@@ -29,4 +29,4 @@ export const createServerResizeObserverMock = <
  * Safe to call on server — returns `false` without throwing.
  */
 export const isResizeObserverSupported = (): boolean =>
-  typeof globalThis !== 'undefined' && typeof globalThis.ResizeObserver !== 'undefined';
+  typeof globalThis !== 'undefined' && globalThis.ResizeObserver !== undefined;

@@ -59,15 +59,15 @@ export const useResizeObserver = <T extends Element = Element>(
     const element = targetRef.current;
     if (!element) return;
 
-    const observerRoot = root !== undefined ? root : element.ownerDocument;
+    const observerRoot = root ?? element.ownerDocument;
     // Pass custom constructor only when it differs from the global
     const isCustomCtor = ResizeObserverCtor !== globalThis.ResizeObserver;
     const pool = getSharedPool(observerRoot, isCustomCtor ? ResizeObserverCtor : undefined);
 
     const callback: ResizeCallback = (resizeEntry) => {
       const size = extractBoxSize(resizeEntry, boxRef.current);
-      const w = size !== undefined ? size.inlineSize : 0;
-      const h = size !== undefined ? size.blockSize : 0;
+      const w = size?.inlineSize ?? 0;
+      const h = size?.blockSize ?? 0;
       setState({ width: w, height: h, entry: resizeEntry });
       onResizeRef.current?.(resizeEntry);
     };

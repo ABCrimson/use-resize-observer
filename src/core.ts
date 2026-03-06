@@ -59,8 +59,8 @@ class ResizeObservableImpl extends EventTarget implements ResizeObservable {
         const sizeEntry = extractBoxSize(entry, box);
         this.dispatchEvent(
           new ResizeEvent({
-            width: sizeEntry !== undefined ? sizeEntry.inlineSize : 0,
-            height: sizeEntry !== undefined ? sizeEntry.blockSize : 0,
+            width: sizeEntry?.inlineSize ?? 0,
+            height: sizeEntry?.blockSize ?? 0,
             entry,
           }),
         );

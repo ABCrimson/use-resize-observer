@@ -27,7 +27,7 @@ export class ObserverPool implements Disposable {
 
   constructor(scheduler?: RafScheduler, Ctor?: typeof ResizeObserver) {
     this.#scheduler = scheduler ?? createScheduler();
-    const ResolvedCtor = Ctor !== undefined ? Ctor : globalThis.ResizeObserver;
+    const ResolvedCtor = Ctor ?? globalThis.ResizeObserver;
     this.#observer = new ResolvedCtor((entries) => {
       for (const entry of entries) {
         const slot = this.#registry.get(entry.target);
@@ -83,8 +83,8 @@ export class ObserverPool implements Disposable {
         this.#size--;
       } else if (existing.size === 1) {
         // Demote back to single callback — reclaim Set memory
-        const [remaining] = existing;
-        this.#registry.set(target, remaining!);
+        const remaining = existing.values().next().value as ResizeCallback;
+        this.#registry.set(target, remaining);
       }
     }
   }
@@ -135,8 +135,7 @@ export const getSharedPool = (
   if (typeof globalThis.ResizeObserver === 'undefined') {
     console.error(
       new Error(
-        '[@crimson_dev/use-resize-observer] ResizeObserver is not available. ' +
-          'Import the /shim entry or use the /server entry for SSR.',
+        `[@crimson_dev/use-resize-observer] ResizeObserver is not available. Import the /shim entry or use the /server entry for SSR.`,
       ),
     );
   }

@@ -60,7 +60,7 @@ class ResizeObserverShim {
 
   #checkForChanges(): void {
     const entries: ResizeObserverEntry[] = [];
-    const dpr = globalThis.devicePixelRatio !== undefined ? globalThis.devicePixelRatio : 1;
+    const dpr = globalThis.devicePixelRatio ?? 1;
 
     for (const target of this.#targets) {
       const rect = target.getBoundingClientRect();

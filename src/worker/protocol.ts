@@ -18,7 +18,7 @@ export const SLOT_BYTES = 8 as const;
 export const MAX_ELEMENTS = 256 as const;
 
 /** Bytes reserved for Int32 dirty flags: MAX_ELEMENTS × 4 bytes. */
-export const DIRTY_REGION_BYTES: number = MAX_ELEMENTS * 4;
+export const DIRTY_REGION_BYTES = 1024;
 
 /** Byte offset where Float16 data slots begin (after dirty flag region). */
 export const DATA_OFFSET: number = DIRTY_REGION_BYTES;
@@ -27,7 +27,7 @@ export const DATA_OFFSET: number = DIRTY_REGION_BYTES;
  * Total SharedArrayBuffer size in bytes.
  * Layout: [dirty flags: 1024B] [float data: 2048B] = 3072B
  */
-export const SAB_SIZE: number = DATA_OFFSET + SLOT_BYTES * MAX_ELEMENTS;
+export const SAB_SIZE = 3072;
 
 /** Offsets within a single Float16Array slot. */
 export const SlotOffset: {
@@ -71,11 +71,10 @@ export const writeSlot = (
   const cs = entry.contentBoxSize[0];
   const bs = entry.borderBoxSize[0];
 
-  // Direct indexed assignment — no intermediate objects, no optional chaining
-  view[0] = cs !== undefined ? cs.inlineSize : 0;
-  view[1] = cs !== undefined ? cs.blockSize : 0;
-  view[2] = bs !== undefined ? bs.inlineSize : 0;
-  view[3] = bs !== undefined ? bs.blockSize : 0;
+  view[0] = cs?.inlineSize ?? 0;
+  view[1] = cs?.blockSize ?? 0;
+  view[2] = bs?.inlineSize ?? 0;
+  view[3] = bs?.blockSize ?? 0;
 
   // Signal main thread with Atomics for guaranteed cross-thread visibility
   const int32 = new Int32Array(sab);
@@ -103,15 +102,11 @@ export const readSlot = (
   // Clear the dirty flag after reading
   Atomics.store(new Int32Array(sab), slotId, 0);
 
-  const w = view[0];
-  const h = view[1];
-  const bw = view[2];
-  const bh = view[3];
   return {
-    width: w !== undefined ? w : 0,
-    height: h !== undefined ? h : 0,
-    borderWidth: bw !== undefined ? bw : 0,
-    borderHeight: bh !== undefined ? bh : 0,
+    width: view[0] ?? 0,
+    height: view[1] ?? 0,
+    borderWidth: view[2] ?? 0,
+    borderHeight: view[3] ?? 0,
   };
 };
 
