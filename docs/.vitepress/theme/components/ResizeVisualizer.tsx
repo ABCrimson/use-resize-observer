@@ -160,7 +160,13 @@ export const ResizeVisualizer = () => {
     }
   }, []);
 
-  const maxDimension = Math.max(state.width, state.height, state.borderWidth, state.borderHeight, 1);
+  const maxDimension = Math.max(
+    state.width,
+    state.height,
+    state.borderWidth,
+    state.borderHeight,
+    1,
+  );
 
   return (
     <div
@@ -172,7 +178,14 @@ export const ResizeVisualizer = () => {
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+        }}
+      >
         <h3 style={{ margin: 0, fontSize: 'var(--text-lg)', color: 'var(--c-text-1)' }}>
           Resize Visualizer
         </h3>
@@ -187,6 +200,7 @@ export const ResizeVisualizer = () => {
             {state.fps} FPS
           </span>
           <button
+            type="button"
             onClick={toggleMode}
             style={{
               padding: '4px 12px',
@@ -225,15 +239,37 @@ export const ResizeVisualizer = () => {
           color: 'var(--c-text-1)',
         }}
       >
-        {state.width > 0 ? `${Math.round(state.width)} x ${Math.round(state.height)}` : 'Drag to resize'}
+        {state.width > 0
+          ? `${Math.round(state.width)} x ${Math.round(state.height)}`
+          : 'Drag to resize'}
       </div>
 
       {/* Bar chart */}
       <div style={{ marginTop: '12px' }}>
-        <Bar label="contentBox W" value={state.width} maxValue={maxDimension} color="var(--c-primary)" />
-        <Bar label="contentBox H" value={state.height} maxValue={maxDimension} color="var(--c-primary-hover)" />
-        <Bar label="borderBox W" value={state.borderWidth} maxValue={maxDimension} color="var(--c-accent)" />
-        <Bar label="borderBox H" value={state.borderHeight} maxValue={maxDimension} color="oklch(58% 0.22 280 / 0.7)" />
+        <Bar
+          label="contentBox W"
+          value={state.width}
+          maxValue={maxDimension}
+          color="var(--c-primary)"
+        />
+        <Bar
+          label="contentBox H"
+          value={state.height}
+          maxValue={maxDimension}
+          color="var(--c-primary-hover)"
+        />
+        <Bar
+          label="borderBox W"
+          value={state.borderWidth}
+          maxValue={maxDimension}
+          color="var(--c-accent)"
+        />
+        <Bar
+          label="borderBox H"
+          value={state.borderHeight}
+          maxValue={maxDimension}
+          color="oklch(58% 0.22 280 / 0.7)"
+        />
       </div>
     </div>
   );
