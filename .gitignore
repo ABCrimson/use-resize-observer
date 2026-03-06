@@ -8,6 +8,5 @@ dist-test/
 coverage/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
-docs/api/
 *.log
 .turbo/
