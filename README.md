@@ -19,6 +19,7 @@
 [![CI][ci-badge]][ci-url]
 [![license][license-badge]][license-url]
 [![TypeScript][ts-badge]][ts-url]
+[![docs][docs-badge]][docs-url]
 
 [npm-badge]: https://img.shields.io/npm/v/@crimson_dev/use-resize-observer?style=flat-square&color=DC143C&labelColor=0D1117
 [npm-url]: https://npmjs.com/package/@crimson_dev/use-resize-observer
@@ -30,6 +31,8 @@
 [license-url]: https://github.com/ABCrimson/use-resize-observer/blob/main/LICENSE
 [ts-badge]: https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&labelColor=0D1117
 [ts-url]: https://www.typescriptlang.org/
+[docs-badge]: https://img.shields.io/badge/docs-GitHub%20Pages-DC143C?style=flat-square&labelColor=0D1117
+[docs-url]: https://abcrimson.github.io/use-resize-observer/
 
 </div>
 

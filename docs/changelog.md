@@ -10,7 +10,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
-## [Unreleased]
+## [0.1.1] - 2026-03-06
+
+### Fixed
+- API reference page returning 404 on GitHub Pages (`docs/api/` was gitignored)
+- Pre-commit hook failing on non-processable file types (yml, md, gitignore)
+
+### Changed
+- GitHub Actions updated to latest versions: checkout v6, setup-node v6, upload-pages-artifact v4, github-script v8
+- VitePress theme enhanced with frosted-glass navigation, feature card hover effects, gradient hero text, animated entrance, custom scrollbar, and oklch color system
+
+## [0.1.0] - 2026-03-05
 
 ### Added
 - `useResizeObserver` core hook with shared observer pool
@@ -20,7 +30,6 @@ See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blo
 - `createResizeObservable` framework-agnostic core (`/core` entry)
 - `createWorkerObserver` for off-main-thread measurements (`/worker` entry)
 - `createServerResizeObserverMock` for SSR/RSC (`/server` entry)
-- `roundToDevicePixel` WASM rounding utility (`/shim` entry)
 - rAF batching with `startTransition` integration
 - Support for all three box models: `content-box`, `border-box`, `device-pixel-content-box`
 - `onResize` callback with full `ResizeObserverEntry` access
@@ -37,17 +46,6 @@ See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blo
 - tsdown 0.21.0-beta.5 build system with Rolldown 2.x
 - Changeset-based release pipeline with npm provenance
 - GitHub Actions CI/CD with full browser matrix (Chrome, Firefox, WebKit)
-
-### Changed
-- Named export (`useResizeObserver`) instead of default export
-- `onResize` callback receives `ResizeObserverEntry` instead of `{ width, height }`
-- Return values are raw floats instead of rounded integers
-- ESM-only distribution (no CJS)
-
-### Removed
-- CommonJS build output
-- React 16/17/18 support (requires React 19.3+)
-- Automatic rounding of dimension values
 
 ## [0.0.1] - 2026-03-05
 

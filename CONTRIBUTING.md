@@ -132,9 +132,13 @@ Releases are automated via [Changesets](https://github.com/changesets/changesets
 
 The `NPM_TOKEN` secret must be configured in the repository settings for automated publishing.
 
+## Documentation
+
+Full documentation is available at **[abcrimson.github.io/use-resize-observer](https://abcrimson.github.io/use-resize-observer/)**.
+
 ## Architecture Overview
 
-See [docs/guide/architecture.md](./docs/guide/architecture.md) for a detailed architecture explanation.
+See the [Architecture Guide](https://abcrimson.github.io/use-resize-observer/guide/architecture) for a detailed explanation, or the source at [docs/guide/architecture.md](./docs/guide/architecture.md).
 
 ## Code of Conduct
 
