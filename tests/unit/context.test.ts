@@ -26,7 +26,7 @@ describe('useResizeObserverConstructor', () => {
     const CustomRO = vi.fn() as unknown as typeof ResizeObserver;
     const { result } = renderHook(() => useResizeObserverConstructor(), {
       wrapper: ({ children }) =>
-        React.createElement(ResizeObserverContext.Provider, { value: CustomRO }, children),
+        React.createElement(ResizeObserverContext, { value: CustomRO }, children),
     });
     expect(result.current).toBe(CustomRO);
   });

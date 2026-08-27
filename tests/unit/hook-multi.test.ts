@@ -342,7 +342,7 @@ describe('useResizeObserverEntries', () => {
       () => useResizeObserverEntries([ref as React.RefObject<HTMLDivElement | null>]),
       {
         wrapper: ({ children }) =>
-          React.createElement(ResizeObserverContext.Provider, { value: CustomRO }, children),
+          React.createElement(ResizeObserverContext, { value: CustomRO }, children),
       },
     );
 

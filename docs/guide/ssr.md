@@ -155,9 +155,9 @@ const MockResizeObserver = class {
 } as unknown as typeof ResizeObserver;
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <ResizeObserverContext.Provider value={MockResizeObserver}>
+  <ResizeObserverContext value={MockResizeObserver}>
     {children}
-  </ResizeObserverContext.Provider>
+  </ResizeObserverContext>
 );
 
 // In your test

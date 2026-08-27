@@ -25,7 +25,10 @@ export default defineConfig({
   },
   // No global 'use client' banner — source files have the directive where needed.
   // server.ts and core.ts must NOT have 'use client' (server-side / framework-agnostic).
-  splitting: true,
-  chunkNames: 'chunks/[name]-[hash]',
+  // tsdown 0.23: code splitting is always on for ESM ('splitting' removed) and chunk
+  // naming moved to the rolldown outputOptions passthrough ('chunkNames' removed).
+  outputOptions: {
+    chunkFileNames: 'chunks/[name]-[hash].js',
+  },
   report: true,
 });

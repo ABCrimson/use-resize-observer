@@ -20,6 +20,8 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
+    // Vitest 5: persist transformed modules in node_modules/.vitest-cache across runs.
+    fsModuleCache: true,
     projects: [
       {
         test: {

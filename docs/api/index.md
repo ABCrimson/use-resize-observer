@@ -90,9 +90,9 @@ React Context for injecting a custom `ResizeObserver` constructor (testing, SSR,
 ```tsx
 import { ResizeObserverContext } from '@crimson_dev/use-resize-observer';
 
-<ResizeObserverContext.Provider value={MockResizeObserver}>
+<ResizeObserverContext value={MockResizeObserver}>
   <App />
-</ResizeObserverContext.Provider>
+</ResizeObserverContext>
 ```
 
 ---

@@ -9,7 +9,7 @@
   "entryPointStrategy": "resolve",
   "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
   "out": "docs/api",
-  "theme": "vitepress",
+  "docsRoot": "docs",
   "readme": "none",
   "excludePrivate": true,
   "excludeInternal": true,

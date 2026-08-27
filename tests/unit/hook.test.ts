@@ -143,7 +143,7 @@ describe('useResizeObserver', () => {
         }),
       {
         wrapper: ({ children }) =>
-          React.createElement(ResizeObserverContext.Provider, { value: CustomRO }, children),
+          React.createElement(ResizeObserverContext, { value: CustomRO }, children),
       },
     );
 

@@ -141,9 +141,9 @@ const MockResizeObserver = class {
 };
 
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <ResizeObserverContext.Provider value={MockResizeObserver as unknown as typeof ResizeObserver}>
+  <ResizeObserverContext value={MockResizeObserver as unknown as typeof ResizeObserver}>
     {children}
-  </ResizeObserverContext.Provider>
+  </ResizeObserverContext>
 );
 ```
 
@@ -151,13 +151,13 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 
 ```mermaid
 flowchart TD
-    CTX["ResizeObserverContext.Provider\nvalue={MockResizeObserver}"]
+    CTX["ResizeObserverContext\nvalue={MockResizeObserver}"]
     HOOK["useResizeObserver()"]
     POOL["ObserverPool"]
     MOCK["MockResizeObserver instance"]
 
     CTX --> HOOK
-    HOOK --> |"useContext(ResizeObserverContext)"| POOL
+    HOOK --> |"use(ResizeObserverContext)"| POOL
     POOL --> |"new Constructor(callback)"| MOCK
 ```
 

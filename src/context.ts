@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { createContext, useContext } from 'react';
+import { createContext, use } from 'react';
 
 /**
  * Context for injecting a custom `ResizeObserver` constructor.
@@ -13,10 +13,10 @@ import { createContext, useContext } from 'react';
  *
  * @example
  * ```tsx
- * // In tests:
- * <ResizeObserverContext.Provider value={MockResizeObserver}>
+ * // In tests (React 19: render the Context itself as the provider):
+ * <ResizeObserverContext value={MockResizeObserver}>
  *   <ComponentThatUsesResize />
- * </ResizeObserverContext.Provider>
+ * </ResizeObserverContext>
  * ```
  */
 export const ResizeObserverContext: React.Context<typeof ResizeObserver | null> = createContext<
@@ -30,6 +30,6 @@ ResizeObserverContext.displayName = 'ResizeObserverContext';
  * @internal
  */
 export const useResizeObserverConstructor = (): typeof ResizeObserver => {
-  const contextValue = useContext(ResizeObserverContext);
+  const contextValue = use(ResizeObserverContext);
   return contextValue !== null ? contextValue : globalThis.ResizeObserver;
 };

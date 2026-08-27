@@ -6,8 +6,8 @@ Thank you for your interest in contributing!
 
 ### Prerequisites
 
-- **Node.js 25+** (install via [nvm](https://github.com/nvm-sh/nvm))
-- **npm 11+** (ships with Node 25)
+- **Node.js 26+** (install via [nvm](https://github.com/nvm-sh/nvm))
+- **npm 12+** (ships with Node 26)
 
 ### Getting Started
 
@@ -33,7 +33,7 @@ npm run docs:dev
 
 ### Code Style
 
-This project uses [Biome 2.4.6](https://biomejs.dev/) as the sole linting and formatting tool. No ESLint, no Prettier.
+This project uses [Biome 2.5.10](https://biomejs.dev/) as the sole linting and formatting tool. No ESLint, no Prettier.
 
 ```bash
 # Check for issues
@@ -47,14 +47,14 @@ npm run format
 
 We target **TypeScript 6** with the strictest possible configuration:
 
-- `erasableSyntaxOnly: true` — all syntax must be strippable by Node 25
+- `erasableSyntaxOnly: true` — all syntax must be strippable by Node 26
 - `isolatedDeclarations: true` — enables parallel DTS generation
-- `verbatimModuleSyntax: true` — forward-compatible with TS 7
+- `verbatimModuleSyntax: true` — required by the TS 7 native compiler
 
 Verify with both compilers:
 
 ```bash
-npm run typecheck      # TypeScript 6
+npm run typecheck      # TypeScript 6 (tsc)
 npm run typecheck:ts7  # TypeScript 7 native preview
 ```
 
@@ -70,7 +70,7 @@ npm run test:coverage           # Coverage report (100% required)
 
 ### Bundle Size
 
-Bundle size is enforced by [size-limit 12.0.0](https://github.com/ai/size-limit):
+Bundle size is enforced by [size-limit 13.0.3](https://github.com/ai/size-limit):
 
 | Entry | Limit |
 |-------|-------|
