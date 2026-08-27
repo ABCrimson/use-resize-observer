@@ -4,20 +4,12 @@ layout: doc
 
 # Resize Visualizer
 
-An interactive demo showing `@crimson_dev/use-resize-observer` in action with real-time bar charts and dimension readouts.
+An annotated tour of the resize visualizer — a React reference component with a real-time bar chart, FPS counter, and dimension readouts.
 
-## Live Demo
+## Running the Component
 
-Drag the bottom-right corner of the box below to resize it. The bar chart updates in real time using GPU-composited CSS `transform: scaleX()` animations.
-
-::: info Live Demo
-This demo requires a running VitePress dev server with React islands. Start the dev server to see the interactive visualizer:
-
-```bash
-npm run docs:dev
-```
-
-The visualizer component source is at [`docs/.vitepress/theme/components/ResizeVisualizer.tsx`](https://github.com/ABCrimson/use-resize-observer/blob/main/docs/.vitepress/theme/components/ResizeVisualizer.tsx).
+::: info Reference component, not a live island
+VitePress renders this site with Vue, so the React visualizer is not mounted on this page. The component source is at [`docs/.vitepress/theme/components/ResizeVisualizer.tsx`](https://github.com/ABCrimson/use-resize-observer/blob/main/docs/.vitepress/theme/components/ResizeVisualizer.tsx) — drop it into any React 19.3+ project (a Vite sandbox works well) to run it. Once mounted, drag the bottom-right corner of the dashed box: the bar chart updates in real time using GPU-composited CSS `transform: scaleX()` animations.
 :::
 
 ## Features Demonstrated
@@ -71,7 +63,7 @@ const useFPS = () => {
 
 ### Main/Worker Toggle
 
-Switch between main-thread and Worker mode to compare behavior:
+The toggle button switches the visualizer's mode state, animating the panel change with the View Transitions API. Conceptually, the two modes of the library compare like this:
 
 | Mode | What Happens |
 |------|-------------|
@@ -81,7 +73,7 @@ Switch between main-thread and Worker mode to compare behavior:
 Both modes produce identical visual output, but Worker mode enables zero-copy measurement sharing with compute workers (WebGL, WASM) via `SharedArrayBuffer`.
 
 ::: warning Worker mode requirements
-Worker mode requires cross-origin isolation headers (COOP/COEP). The demo automatically detects whether `crossOriginIsolated` is available and disables the Worker toggle if not.
+In the current reference implementation the measurement path always runs on the main thread — the toggle demonstrates the View Transitions pattern rather than re-routing observation through the `/worker` entry. Real Worker mode additionally requires cross-origin isolation headers (COOP/COEP); see the [Worker Mode guide](/guide/worker).
 :::
 
 ### View Transitions
@@ -102,6 +94,8 @@ const toggleMode = () => {
 
 ## How It Works
 
+When the visualizer is built on `useResizeObserver` (as in the extended example below), each resize flows through the library's full pipeline:
+
 ```mermaid
 graph LR
     A["User drags\nresize handle"] --> B["ResizeObserver\nfires"]
@@ -113,9 +107,11 @@ graph LR
     G --> H["GPU composite\n(no layout)"]
 ```
 
+(The reference component in the theme folder uses a raw `ResizeObserver` directly so the docs theme does not need to bundle the library — the rendering techniques are identical either way.)
+
 ### Key observations
 
-1. **Single observer** -- The resizable div and the history tracker both share the same underlying `ResizeObserver` instance via the pool.
+1. **Single observer** -- With the library, every `useResizeObserver` instance on the page shares one underlying `ResizeObserver` via the pool.
 
 2. **GPU-composited bars** -- The `.resize-bar` class uses `will-change: transform` and CSS `transition` for smooth animations that run entirely on the compositor thread.
 
@@ -123,9 +119,9 @@ graph LR
 
 4. **startTransition** -- The bar chart and dimension readouts update as a low-priority transition, so they never block user interaction with the resize handle.
 
-## Visualizer Component
+## Extended Example: History Chart with ARIA
 
-The core visualizer component tracks both live dimensions and a history buffer:
+This extended variant builds the visualizer on `useResizeObserver` itself, adding a resize-history bar chart and screen-reader announcements:
 
 ```tsx
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
@@ -187,7 +183,7 @@ const ResizeVisualizer = () => {
 
 ## Accessibility
 
-The visualizer uses ARIA attributes for screen reader support:
+The extended example uses ARIA attributes for screen reader support:
 
 - **`aria-live="polite"`** on the dimension readout announces size changes without interrupting the user
 - **`aria-atomic="true"`** ensures the full dimension string is read, not just the changed part
@@ -240,14 +236,18 @@ With the Performance panel open in DevTools, you should observe:
 
 ## Try It Yourself
 
+To browse this walkthrough locally:
+
 ```bash
 git clone https://github.com/ABCrimson/use-resize-observer.git
 cd use-resize-observer
-npm install
+npm ci
 npm run docs:dev
 ```
 
 Then navigate to `http://localhost:5173/use-resize-observer/demos/visualizer/`.
+
+To run the component interactively, copy `docs/.vitepress/theme/components/ResizeVisualizer.tsx` into any React 19.3+ Vite project and render `<ResizeVisualizer />` (add the `.resize-bar` CSS from `docs/.vitepress/theme/animations.css` for the composited bar transitions).
 
 ## Source Code
 
