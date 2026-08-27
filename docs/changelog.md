@@ -10,6 +10,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 See the full [CHANGELOG.md](https://github.com/ABCrimson/use-resize-observer/blob/main/CHANGELOG.md) on GitHub for the machine-readable version.
 
+## [1.0.1] - 2026-08-27
+
+Released to carry the corrected README to the npm registry, which renders the README from the
+published tarball and cannot be refreshed without a version bump. No behavioral change: zero
+runtime dependencies, with `peerDependencies` and `engines` unchanged from 1.0.0.
+
+### Documentation
+- Main bundle size corrected from 1.11 kB to **1.12 kB** (min+gzip)
+- Comparison table retargeted from `use-resize-observer@9` to `@10`, with its bundle size,
+  React floor, module format, TypeScript types, and box-model support all corrected
+- New comparison rows: render batching, multi-element hook, `FinalizationRegistry` GC
+  safety net, and raw-float vs rounded reported values
+
+### Changed
+- `src/context.ts` reads context via React 19's `use()` instead of `useContext()`
+  (behaviorally equivalent); JSDoc example updated to `<ResizeObserverContext value={…}>`
+- Build migrated to `tsdown` 0.23 (chunk naming via `outputOptions.chunkFileNames`)
+
+### Internal
+- Dev toolchain refreshed (TypeScript 6.0.3, React 19.3 canary). No consumer impact.
+
 ## [1.0.0] - 2026-03-06
 
 ### Highlights

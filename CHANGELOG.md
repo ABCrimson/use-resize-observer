@@ -5,6 +5,33 @@ All notable changes to `@crimson_dev/use-resize-observer` will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-08-27
+
+Released to carry the corrected README to the npm registry, which renders the README from
+the published tarball and cannot be refreshed without a version bump. No behavioral change:
+zero runtime dependencies, and `peerDependencies` (`react >=19.3.0`) and `engines`
+(`node >=25.0.0`) are unchanged from 1.0.0.
+
+### Documentation
+- Corrected the main bundle size from 1.11 kB to **1.12 kB** (min+gzip)
+- Rewrote the comparison table against `use-resize-observer@10` (was comparing against
+  the outdated `@9`): corrected its bundle size (~800 B → ~1.1 kB gzip), React floor
+  (16.8+ → 18.2+), module format (CJS + ESM → CJS + ESM dual), TypeScript types
+  (4.x → 6.x), and box-model support (content-box only → all 3)
+- Added comparison rows for render batching, the multi-element hook, the
+  `FinalizationRegistry` GC safety net, and raw-float vs rounded reported values
+
+### Changed
+- `src/context.ts` now reads context with React 19's `use()` instead of `useContext()`.
+  Behaviorally equivalent; the JSDoc example is updated to the React 19 form of rendering
+  the context itself as the provider (`<ResizeObserverContext value={…}>`).
+- Build migrated to `tsdown` 0.23: ESM code splitting is always on (`splitting` removed)
+  and chunk naming moved to the rolldown `outputOptions.chunkFileNames` passthrough.
+
+### Internal
+- Dev toolchain refreshed: TypeScript 6.0.3, `@vitejs/plugin-react` 6.1.0, current
+  React 19.3 canary, and refreshed `@types/react`. All devDependencies — no consumer impact.
+
 ## [1.0.0] - 2026-03-06
 
 ### Highlights
