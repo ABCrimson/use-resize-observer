@@ -1,19 +1,19 @@
 # Bundle Size
 
-One of the primary design goals of `@crimson_dev/use-resize-observer` is an aggressively small bundle. The full main entry — pool, scheduler, and hook — weighs just 1.11 kB min+gzip.
+One of the primary design goals of `@crimson_dev/use-resize-observer` is an aggressively small bundle. The full main entry — pool, scheduler, and hook — weighs just 1.12 kB min+gzip.
 
 ## Size Budget
 
-| Entry Point | Min+Gzip | Description |
-|------------|----------|-------------|
-| Main (`useResizeObserver`) | **1.11 kB** | Full hook with pool + scheduler |
-| Core (`/core`) | **330 B** | EventTarget-based, framework-agnostic |
-| Server (`/server`) | **114 B** | SSR/RSC no-op entry |
-| Shim (`/shim`) | **530 B** | Legacy browser polyfill |
-| Worker (`/worker`) | **1.17 kB** | SAB-based measurement sharing |
+| Entry Point | Min+Gzip | Limit | Description |
+|------------|----------|-------|-------------|
+| Main (`useResizeObserver`) | **1.12 kB** | 1.2 kB | Full hook with pool + scheduler |
+| Core (`/core`) | **329 B** | 500 B | EventTarget-based, framework-agnostic |
+| Server (`/server`) | **115 B** | 300 B | SSR/RSC no-op entry |
+| Shim (`/shim`) | **527 B** | 1.5 kB | Legacy browser polyfill |
+| Worker (`/worker`) | **1.17 kB** | 1.5 kB | SAB-based measurement sharing |
 
 ::: tip Measured with size-limit
-All size figures are measured using `size-limit` with the project's `.size-limit.json` config. The CI pipeline enforces these budgets on every commit -- a PR that exceeds the budget will fail.
+All size figures are measured using `size-limit` with the project's `.size-limit.json` config. The CI pipeline enforces these budgets on every push and pull request -- a PR that exceeds a budget will fail.
 :::
 
 ## Why So Small?
@@ -47,12 +47,12 @@ The library is structured as multiple entry points to enable granular tree-shaki
 If you only import the core hook, the worker and server code is never included in your bundle:
 
 ```tsx
-// Only the main hook is bundled (1.11 kB)
+// Only the main hook is bundled (1.12 kB)
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 ```
 
 ```tsx
-// Main + worker addon is bundled (~2.36 kB)
+// Main + worker addon is bundled (~2.3 kB)
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 import { useResizeObserverWorker } from '@crimson_dev/use-resize-observer/worker';
 ```
@@ -79,8 +79,8 @@ How does this compare to alternatives?
 
 | Library | Min+Gzip | Dependencies | ESM |
 |---------|----------|-------------|-----|
-| **@crimson_dev/use-resize-observer** | **1.11 kB** | **0** | **Yes** |
-| use-resize-observer@9.1.0 | ~1.2KB | 0 | Dual |
+| **@crimson_dev/use-resize-observer** | **1.12 kB** | **0** | **ESM only** |
+| use-resize-observer@10.0.0 | ~1.1KB | 0 | Dual |
 | react-resize-detector | ~3.4KB | 2 | Dual |
 | @react-hook/resize-observer | ~1.8KB | 2 | Dual |
 | react-use (useResizeObserver) | ~15KB+ | 20+ | No |
@@ -101,7 +101,7 @@ If a PR increases any entry point beyond its configured limit, the CI size check
 
 ## Import Cost
 
-If you use the [Import Cost](https://marketplace.visualstudio.com/items?itemName=wix.vscode-import-cost) VS Code extension, you will see the size inline next to your import statement. The main hook should display as approximately 1.11 kB gzip.
+If you use the [Import Cost](https://marketplace.visualstudio.com/items?itemName=wix.vscode-import-cost) VS Code extension, you will see the size inline next to your import statement. The main hook should display as approximately 1.12 kB gzip.
 
 ## Next Steps
 

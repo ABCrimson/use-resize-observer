@@ -52,7 +52,7 @@ Most resize hooks create **one `ResizeObserver` per component**. At scale, that 
 ## Highlights
 
 <table>
-<tr><td>📦</td><td><strong>1.11 kB</strong> gzip &middot; zero dependencies</td></tr>
+<tr><td>📦</td><td><strong>1.12 kB</strong> gzip &middot; zero dependencies</td></tr>
 <tr><td>⚡</td><td>Shared <code>ResizeObserver</code> pool &middot; rAF batching &middot; <code>startTransition</code></td></tr>
 <tr><td>🧵</td><td>Worker mode via <code>SharedArrayBuffer</code> + <code>Float16Array</code></td></tr>
 <tr><td>🎯</td><td>All 3 box models: <code>content-box</code>, <code>border-box</code>, <code>device-pixel-content-box</code></td></tr>
@@ -153,17 +153,19 @@ observer.observe(element, (entry) => console.log(entry));
 
 ## Comparison
 
-| | `use-resize-observer@9` | `@crimson_dev/use-resize-observer` |
+| | `use-resize-observer@10` | `@crimson_dev/use-resize-observer` |
 |---|---|---|
-| Bundle | ~800B | **1.11 kB** (pool + scheduler + hook) |
-| React | 16.8+ | **19.3+** with Compiler |
-| Module | CJS + ESM | **ESM only** |
-| TypeScript | 4.x | **6.0 strict** |
-| Observer model | 1 per component | **Shared pool** |
+| Bundle | ~1.1 kB gzip | **1.12 kB** (pool + scheduler + hook) |
+| React | 18.2+ | **19.3+** with Compiler |
+| Module | CJS + ESM dual | **ESM only** |
+| TypeScript | 6.x types | **6.0 strict** (`isolatedDeclarations`) |
+| Observer model | 1 per hook | **Shared pool** |
+| Render batching | None (direct `setState`) | **rAF + startTransition** |
+| Box models | All 3 | All 3 |
 | Worker mode | — | **SharedArrayBuffer** |
-| Box models | content-box only | **All 3** |
-| GC cleanup | Manual | **Automatic** |
-| Batching | None | **rAF + startTransition** |
+| Multi-element hook | — | **`useResizeObserverEntries`** |
+| GC safety net | Effect cleanup only | **`FinalizationRegistry`** |
+| Reported values | Rounded (`Math.round` default) | **Raw floats** |
 
 ## Requirements
 

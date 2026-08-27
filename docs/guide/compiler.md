@@ -32,7 +32,7 @@ The compiler correctly identifies `onResizeRef` as a ref and exempts it from mem
 All hooks are called unconditionally at the top level of the custom hook. The pool and scheduler are initialized lazily inside `useEffect`, not behind conditionals:
 
 ```typescript
-// Correct: unconditional hook calls
+// Correct: unconditional hook calls (simplified — see src/hook.ts for the real implementation)
 export function useResizeObserver<E extends Element>(options?: Options<E>) {
   const [size, setSize] = useState<Size>({ width: undefined, height: undefined });
   const internalRef = useRef<E>(null);
@@ -59,14 +59,14 @@ The hook's return value (`{ ref, width, height }`) is derived entirely from Reac
 
 ## Verification
 
-The full test suite runs under React Compiler transformation on every CI build:
+A dedicated `compiler` Vitest project runs the hook test suite with `babel-plugin-react-compiler` applied, so every assertion executes against compiler-transformed components. It is part of the default `npm run test` run:
 
 ```bash
-# Run tests with React Compiler enabled
-npm run test -- --env-setup compiler
+# Run the React Compiler compatibility project on its own
+npx vitest run --project compiler
 
-# Run specific compiler compatibility tests
-npm run test -- --grep "compiler" --env-setup compiler
+# Or run all projects (unit + compiler + browser)
+npm run test
 ```
 
 ### Verified Scenarios

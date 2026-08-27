@@ -176,7 +176,7 @@ Worker mode uses `Float16Array` (ES2026) for compact measurement storage:
 - Range of +/- 65,504 (covers any realistic element dimension)
 
 ::: warning Float16 precision limits
-Float16 has limited precision for very large values. Elements wider than 2,048 CSS pixels will lose sub-pixel accuracy. For full-screen canvas at 4K resolution, use `precision: 'float32'` instead.
+Float16 has limited precision for very large values. Elements wider than 2,048 CSS pixels will lose sub-pixel accuracy. If you need exact sub-pixel dimensions for very large elements (e.g., full-screen 4K canvas), use the main-thread `useResizeObserver` hook, which reports full-precision floats.
 :::
 
 ## Worker Pooling
@@ -185,32 +185,24 @@ All `useResizeObserverWorker` instances share a **single SharedArrayBuffer**:
 
 ```text
 100 components with useResizeObserverWorker()
-  → 1 main-thread ResizeObserver (lazy-initialized via Promise.withResolvers())
+  → 1 main-thread ResizeObserver (lazy-initialized)
   → 1 SharedArrayBuffer (3KB)
   → 1 Int32Array slot bitmap
 ```
 
 The SAB is:
 
-- **Lazy-initialized** on first mount via `ensureWorker()` + `Promise.withResolvers()` (ES2024+)
+- **Lazy-initialized** synchronously on first mount (internal `ensureSharedState()`)
 - **Kept alive** as long as at least one element is observed
-- **Auto-deallocated** when the last element is unobserved (clears SAB reference)
+- **Auto-deallocated** when the last element is unobserved (observer disconnected, SAB reference cleared, slot bitmap reset)
 
-## Error Handling and Recovery
+## Error Handling
 
-Since observation runs on the main thread, there is no Worker process to crash. If the SAB becomes corrupted or the observer encounters an error, recovery is straightforward:
+Since observation runs on the main thread, there is no Worker process to crash. The failure modes are limited and deterministic:
 
-1. Error detected in the rAF poll loop
-2. Fresh SharedArrayBuffer allocated
-3. All active observations re-registered with new slot assignments
-4. Measurements resume seamlessly
-
-```mermaid
-flowchart TD
-    A["Error detected"] --> B["Allocate new SAB"]
-    B --> C["Re-register all active observations"]
-    C --> D["Measurements resume"]
-```
+- **`crossOriginIsolated === false`** — initialization throws; the hook catches the error, logs it via `console.error` (with a link to the MDN documentation), and returns `undefined` dimensions. The rest of your component keeps working.
+- **More than 256 simultaneous observations** (`MAX_ELEMENTS`) — slot allocation fails; the hook logs a descriptive error and that instance stays inert.
+- **Errors are per-instance** — one failed hook instance never affects the shared SAB or other observers.
 
 ::: danger crossOriginIsolated Required
 If `crossOriginIsolated` is `false`, `useResizeObserverWorker` logs a descriptive error with a link to MDN documentation. The hook requires COOP/COEP headers to function.
@@ -218,13 +210,16 @@ If `crossOriginIsolated` is `false`, `useResizeObserverWorker` logs a descriptiv
 
 ## Fallback Behavior
 
-If `SharedArrayBuffer` is not available (missing headers, older browser, or non-secure context), the `ensureWorker()` initialization will reject with a clear error message:
+If `SharedArrayBuffer` is not available (missing headers, older browser, or non-secure context), initialization fails with a clear message in the console and the hook returns `undefined` for `width`/`height`:
 
 ```tsx
-// If crossOriginIsolated is false:
+// If crossOriginIsolated is false, the console shows:
+//   [@crimson_dev/use-resize-observer/worker] Init failed:
 //   Error: crossOriginIsolated is false. Worker mode requires COOP/COEP headers.
 //   See: https://developer.mozilla.org/en-US/docs/Web/API/crossOriginIsolated
 ```
+
+There is no automatic downgrade to the main-thread hook — if you need a fallback, branch on `globalThis.crossOriginIsolated` yourself and render a component that uses `useResizeObserver` instead.
 
 ## Performance Comparison
 

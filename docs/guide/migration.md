@@ -1,6 +1,6 @@
-# Migration from use-resize-observer v9
+# Migration from use-resize-observer
 
-This guide walks you through migrating from the upstream `use-resize-observer@9.1.0` to `@crimson_dev/use-resize-observer`. The API surface is intentionally similar, but there are key differences to be aware of.
+This guide walks you through migrating from the upstream `use-resize-observer` (v10; v9 notes included where behavior differs) to `@crimson_dev/use-resize-observer`. The API surface is intentionally similar, but there are key differences to be aware of.
 
 ## Step 1: Update Dependencies
 
@@ -18,14 +18,19 @@ Before migrating, ensure your project is on React 19.3.0 or later. This library 
 
 ## Step 2: Update Imports
 
-The primary import path changes:
+The import path changes:
+
+```diff
+- import { useResizeObserver } from 'use-resize-observer';
++ import { useResizeObserver } from '@crimson_dev/use-resize-observer';
+```
+
+Upstream v10 already uses a **named export**, so only the package name changes. If you are coming from v9 (default export), also switch to the named import:
 
 ```diff
 - import useResizeObserver from 'use-resize-observer';
 + import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 ```
-
-Note that this library uses a **named export** rather than a default export.
 
 ## Step 3: API Differences
 
@@ -40,11 +45,11 @@ const { ref, width, height } = useResizeObserver<HTMLDivElement>();
 
 ### Callback API
 
-The upstream library uses an `onResize` callback with `{ width, height }`:
+Upstream v10's `onResize` callback receives `{ width, height, entry }` (v9 passed only `{ width, height }`). This library passes the raw `ResizeObserverEntry` directly:
 
 ```diff
 - const { ref } = useResizeObserver({
--   onResize: ({ width, height }) => {
+-   onResize: ({ width, height, entry }) => {
 -     console.log(width, height);
 -   },
 - });
@@ -59,18 +64,20 @@ The upstream library uses an `onResize` callback with `{ width, height }`:
 ```
 
 ::: tip Full Entry Access
-The new `onResize` callback receives the raw `ResizeObserverEntry` instead of a simplified `{ width, height }` object. This gives you access to all box models (`borderBoxSize`, `contentBoxSize`, `devicePixelContentBoxSize`) directly in the callback.
+The `onResize` callback receives the raw `ResizeObserverEntry` as its only argument. This gives you access to all box models (`borderBoxSize`, `contentBoxSize`, `devicePixelContentBoxSize`) directly in the callback.
 :::
 
 ### Box model option
 
-The upstream library always uses `content-box`. This library lets you choose:
+Both libraries support the `box` option with all three box models — no change needed here:
 
 ```tsx
 const { ref, width, height } = useResizeObserver<HTMLDivElement>({
   box: 'border-box', // or 'content-box' (default) or 'device-pixel-content-box'
 });
 ```
+
+This library additionally accepts a `root` option (`Document | ShadowRoot`) to scope the shared pool, which the upstream does not have.
 
 ### Ref forwarding
 
@@ -83,7 +90,7 @@ const { width, height } = useResizeObserver({ ref: myRef });
 
 ### Rounding behavior
 
-The upstream library returns rounded values (`Math.round`). This library returns raw floating-point values from the observer. If you depend on rounded integers, add rounding at the call site:
+The upstream library returns rounded values (`Math.round` by default, customizable via its `round` option). This library returns raw floating-point values from the observer and has no `round` option. If you depend on rounded integers, add rounding at the call site:
 
 ```tsx
 const { ref, width, height } = useResizeObserver<HTMLDivElement>();
@@ -126,19 +133,21 @@ This library is ESM-only and uses modern APIs. It will not work in Internet Expl
 
 After migrating, you can take advantage of features not available in the upstream:
 
-- **[Worker mode](/guide/worker)** -- offload measurements to a Web Worker
-- **[Box models](/guide/box-models)** -- use `border-box` or `device-pixel-content-box`
+- **[Worker mode](/guide/worker)** -- share live measurements with compute workers via `SharedArrayBuffer`
+- **[Multi-element hook](/guide/advanced)** -- observe N elements with one `useResizeObserverEntries` call
 - **[Signals integration](/guide/signals)** -- connect to Preact signals or Reactively
-- **[Factory API](/guide/advanced)** -- create pre-configured hook instances
+- **[Factory & core APIs](/guide/advanced)** -- framework-agnostic `createResizeObserver` / `createResizeObservable`
 
 ## Quick Reference
 
-| Feature | use-resize-observer@9 | @crimson_dev/use-resize-observer |
-|---------|----------------------|----------------------------------|
-| Import style | Default export | Named export |
-| Callback arg | `{ width, height }` | `ResizeObserverEntry` |
-| Return values | Rounded integers | Raw floats |
-| Box model | content-box only | All three box models |
-| Module format | CJS + ESM | ESM only |
-| React version | 16.8+ | 19.3+ |
-| TypeScript | 4.x+ | 6.0+ strict |
+| Feature | use-resize-observer@10 | @crimson_dev/use-resize-observer |
+|---------|------------------------|----------------------------------|
+| Import style | Named export | Named export |
+| Callback arg | `{ width, height, entry }` | `ResizeObserverEntry` |
+| Return values | Rounded (customizable `round`) | Raw floats |
+| Box model | All three box models | All three box models |
+| `root` option | — | `Document \| ShadowRoot` |
+| Observer model | 1 per hook | Shared pool + rAF batching |
+| Module format | CJS + ESM dual | ESM only |
+| React version | 18.2+ | 19.3+ |
+| Worker mode | — | SharedArrayBuffer + Float16Array |

@@ -123,7 +123,7 @@ const flush = () => {
 ```
 
 ::: warning When startTransition is not desired
-If you need resize updates to be synchronous (e.g., for canvas rendering that must match exactly), use the `onResize` callback instead of the reactive `width`/`height` return values. The callback fires outside of startTransition.
+If you need to react to measurements without waiting for a React render (e.g., canvas drawing), use the `onResize` callback instead of the reactive `width`/`height` return values. The callback still goes through the rAF batcher (at most one frame of latency), but it executes synchronously during the flush — you do not wait for the transition to commit a render.
 :::
 
 ## Lifecycle Management
@@ -201,4 +201,4 @@ The `SharedArrayBuffer` (3,072 bytes) is divided into two regions: bytes 0--1023
 
 - [Performance](/guide/performance) -- Benchmark data proving the architecture's benefits
 - [Worker Mode](/guide/worker) -- Deep dive into SAB-based measurement sharing
-- [Bundle Size](/guide/bundle-size) -- How tree-shaking keeps the main entry at 1.11 kB
+- [Bundle Size](/guide/bundle-size) -- How tree-shaking keeps the main entry at 1.12 kB

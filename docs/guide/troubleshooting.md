@@ -231,7 +231,7 @@ const { ref } = useResizeObserver<HTMLDivElement>({
 
 ### Measurements lag behind visual state
 
-This is expected behavior. The hook batches updates via `requestAnimationFrame` and `startTransition`, meaning measurements are 1-2 frames behind the visual state. For most UI applications this is imperceptible. If you need synchronous measurements, use the `onResize` callback which fires directly from the observer.
+This is expected behavior. The hook batches updates via `requestAnimationFrame` and `startTransition`, meaning measurements are 1-2 frames behind the visual state. For most UI applications this is imperceptible. If you need to react without waiting for a React render, use the `onResize` callback — it also goes through the rAF batcher (at most one frame of latency), but it runs synchronously during the flush instead of waiting for the transition to commit a render.
 
 ## `Float16Array is not defined`
 
@@ -241,14 +241,14 @@ Worker mode requires `Float16Array`. Ensure your runtime supports it:
 - Node.js >= 25.0.0 (development/testing)
 - Chromium >= 128, Firefox >= 129 (browser runtime)
 
-If `Float16Array` is not available, worker mode automatically falls back to `Float32Array`.
+There is no automatic fallback — on a runtime without `Float16Array`, use the main-thread `useResizeObserver` hook instead of worker mode.
 
 ## Bundle Size Larger Than Expected
 
 **Cause:** Importing from the wrong entry point or importing worker/server code alongside the main hook.
 
 ```typescript
-// CORRECT: tree-shakeable import (1.11 kB gzip)
+// CORRECT: tree-shakeable import (1.12 kB gzip)
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 ```
 

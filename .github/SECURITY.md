@@ -15,7 +15,7 @@ If you discover a security vulnerability in `@crimson_dev/use-resize-observer`, 
 ### How to Report
 
 1. **Do NOT open a public issue.**
-2. Email: security@crimsondev.io (placeholder)
+2. [Open a private security advisory](https://github.com/ABCrimson/use-resize-observer/security/advisories/new) on GitHub
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

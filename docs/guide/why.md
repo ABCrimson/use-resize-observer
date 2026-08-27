@@ -22,22 +22,23 @@ Most ResizeObserver hooks in the ecosystem share these shortcomings:
 
 `@crimson_dev/use-resize-observer` was built from scratch for the React 19 era:
 
-| Concern | Upstream (v9) | This Library |
-|---------|---------------|--------------|
+| Concern | Upstream (v10) | This Library |
+|---------|----------------|--------------|
 | Observer instances | 1 per hook | 1 shared pool |
-| Render batching | None | rAF + startTransition |
-| Bundle size | ~1.2KB gzip | 1.11 kB gzip |
-| Module format | CJS + ESM | ESM only |
+| Render batching | None (direct `setState`) | rAF + startTransition |
+| Bundle size | ~1.1KB gzip | 1.12 kB gzip |
+| Module format | CJS + ESM dual | ESM only |
 | Worker support | None | SharedArrayBuffer + Float16Array |
-| React version | 16.8+ | 19.3+ |
-| TypeScript | 4.x | 6.0 strict |
-| React Compiler | Untested | Verified safe |
+| Multi-element hook | None | `useResizeObserverEntries` |
+| React version | 18.2+ | 19.3+ |
+| TypeScript | 6.x types | 6.0 strict (`isolatedDeclarations`) |
+| React Compiler | Not documented | Verified safe |
 
 ## Design Principles
 
 ### ESNext-First
 
-We target ES2026 and let your bundler handle downleveling. This means we can use `using` declarations for automatic cleanup, `Float16Array` for compact worker buffers, `Atomics` for cross-thread dirty-flag protocols, `FinalizationRegistry` for GC-backed cleanup, and `Promise.withResolvers()` for worker initialization.
+We target ES2026 and let your bundler handle downleveling. This means we can implement `Disposable` (`using` / `Symbol.dispose`) for automatic cleanup, use `Float16Array` for compact worker buffers, `Atomics` for cross-thread dirty-flag protocols, `FinalizationRegistry` for GC-backed cleanup, and `Math.sumPrecise()` for sub-pixel normalization in the shim.
 
 ### Zero Dependencies
 
@@ -56,11 +57,11 @@ The library compiles under the strictest possible TypeScript 6 configuration:
 Every callback passed to the hook is wrapped with `useEffectEvent` semantics. The React Compiler can freely memoize components that use `useResizeObserver` without any manual `useMemo` or `useCallback` annotations.
 
 ::: tip When to choose this library
-If you are on React 19.3+ and care about bundle size, render performance, or SAB-based measurement sharing with compute workers, this library is designed for you. If you need React 16/17/18 support, the upstream `use-resize-observer` remains the better choice.
+If you are on React 19.3+ and care about bundle size, render performance, or SAB-based measurement sharing with compute workers, this library is designed for you. If you need React 18 support, upstream `use-resize-observer@10` (React 18.2+) remains the better choice; for React 16/17, use upstream v9.
 :::
 
 ## Further Reading
 
 - [Architecture](/guide/architecture) -- How the shared observer pool works internally
 - [Performance](/guide/performance) -- Benchmark comparisons with other hooks
-- [Migration](/guide/migration) -- Step-by-step migration from upstream v9
+- [Migration](/guide/migration) -- Step-by-step migration from the upstream `use-resize-observer`

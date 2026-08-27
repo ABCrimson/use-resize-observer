@@ -63,22 +63,29 @@ npm run typecheck:ts7  # TypeScript 7 native preview
 Three-tier testing architecture:
 
 ```bash
-npm run test                    # All unit tests (happy-dom)
+npm run test                    # All test projects (unit + compiler + browser)
+npx vitest run --project unit   # Unit tests only (happy-dom) — what the CI unit-test job runs
+npx vitest run --project compiler  # React Compiler compatibility tests
 npm run test:browser            # Browser tests (Chromium/Firefox/WebKit)
-npm run test:coverage           # Coverage report (100% required)
+npm run test:coverage -- --project unit  # Coverage report (V8 coverage requires a non-browser project)
 ```
+
+Coverage thresholds are enforced by `vitest.config.ts`: **95% lines / 95% functions / 95% statements / 85% branches** (current: ~98% lines, 100% functions — the only gap is the untestable `FinalizationRegistry` GC callback in `pool.ts`).
+
+> [!NOTE]
+> Run coverage with `--project unit` — the V8 coverage provider cannot run together with the Playwright browser projects.
 
 ### Bundle Size
 
-Bundle size is enforced by [size-limit 13.0.3](https://github.com/ai/size-limit):
+Bundle size is enforced by [size-limit 13.0.3](https://github.com/ai/size-limit) via `.size-limit.json`:
 
-| Entry | Limit |
-|-------|-------|
-| Main (`useResizeObserver`) | 1.11 kB gzip |
-| Worker | 1.17 kB gzip |
-| Core | 330 B gzip |
-| Server | 114 B gzip |
-| Shim | 530 B gzip |
+| Entry | Limit | Current (min+gzip) |
+|-------|-------|--------------------|
+| Main (`useResizeObserver`) | 1.2 kB | 1.12 kB |
+| Worker | 1.5 kB | 1.17 kB |
+| Shim | 1.5 kB | 527 B |
+| Core | 500 B | 329 B |
+| Server | 300 B | 115 B |
 
 ```bash
 npm run size

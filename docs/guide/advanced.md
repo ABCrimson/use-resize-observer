@@ -201,29 +201,20 @@ interface ResizeObservable extends EventTarget, Disposable {
 }
 ```
 
-## WASM Rounding (Optional)
+## Precise Summation (`/shim`)
 
-For pixel-perfect `devicePixelContentBoxSize` normalization, an optional WASM module provides high-precision sub-pixel rounding:
+The `/shim` entry exports `sumPrecise`, a helper for accumulating sub-pixel measurements without floating-point drift. It uses `Math.sumPrecise()` (ES2026) when the runtime supports it, falling back to iterative addition:
 
 ```typescript
-import { roundToDevicePixel } from '@crimson_dev/use-resize-observer/shim';
+import { sumPrecise } from '@crimson_dev/use-resize-observer/shim';
 
-const cssPixels = roundToDevicePixel(199.5, window.devicePixelRatio);
-// Returns the nearest CSS pixel value aligned to device pixel boundaries
+const total = sumPrecise([0.1, 0.2, 0.3]);
+// Exact sum without intermediate rounding error
 ```
 
-This function accounts for the fact that `devicePixelRatio` is often an irrational number (e.g., 1.5 on 150% scaling), and naive `Math.round(value * dpr) / dpr` can produce values that don't align to actual device pixel boundaries.
-
-::: tip When you need this
-Most applications do not need device-pixel-precise rounding. This is relevant for:
-- Canvas rendering where 1px misalignment causes visible blurriness
-- WebGL viewports that must match the exact framebuffer size
-- PDF/print rendering requiring precise pixel alignment
+::: tip Internal device-pixel helpers
+Device-pixel rounding helpers (`roundToDevicePixel`, `normalizeDimension`) live in the internal `src/shim/wasm-round.ts` module, backed by an optional AssemblyScript WASM build (`wasm/round.ts`). They are `@internal` and not part of the public API — for device-pixel-accurate sizes, use the `device-pixel-content-box` box model, which reports physical pixels directly.
 :::
-
-### Fallback
-
-If the WASM module cannot be loaded (CSP restrictions, WASM not available), it falls back to `Math.sumPrecise()` (ES2026) for the rounding calculation.
 
 ## Shadow DOM Support
 
@@ -239,7 +230,7 @@ const ShadowComponent = ({ shadowRoot }: { shadowRoot: ShadowRoot }) => {
 };
 ```
 
-Each `ShadowRoot` gets its own `ObserverPool` instance, preventing cross-contamination between shadow trees. When the shadow root is detached, its pool is automatically cleaned up via the `WeakRef` mechanism.
+Each `ShadowRoot` gets its own `ObserverPool` instance, preventing cross-contamination between shadow trees. The pool registry is a `WeakMap` keyed by root, so when a shadow root is detached and garbage collected, its pool goes with it — no manual cleanup required.
 
 ## API Summary
 
@@ -252,7 +243,7 @@ Each `ShadowRoot` gets its own `ObserverPool` instance, preventing cross-contami
 | `createResizeObservable` | `/core` | Any | EventTarget-based observable |
 | `useResizeObserverWorker` | `/worker` | React | SAB-based measurement sharing |
 | `createServerResizeObserverMock` | `/server` | React | SSR/RSC mock |
-| `roundToDevicePixel` | `/shim` | Any | Pixel-precise rounding |
+| `sumPrecise` | `/shim` | Any | Drift-free float summation |
 
 ## Next Steps
 

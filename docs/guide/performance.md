@@ -94,26 +94,25 @@ Consider 100 elements resizing during a window resize event:
 | Approach | Observer Instances | setState Calls | Renders | Paints |
 |----------|-------------------|---------------|---------|--------|
 | Naive (1 observer/element) | 100 | 100 (synchronous) | 100 | 1-100 |
-| Upstream v9 | 100 | 100 (batched by React 18+) | 1-2 | 1 |
+| Upstream v10 | 100 | 100 (batched by React 18+) | 1-2 | 1 |
 | **This library** | **1** | **100 (in startTransition)** | **1** | **1** |
 
-The key difference from upstream v9 is that even though React 18+ batches `setState` calls, each observer callback still runs independently. With 100 observers, you have 100 callback invocations, 100 closure allocations, and 100 `observe()` calls on mount. This library reduces all of that to 1.
+The key difference from the upstream is that even though React 18+ batches `setState` calls, each observer callback still runs independently. With 100 observers, you have 100 callback invocations, 100 closure allocations, and 100 observer instances created on mount. This library reduces all of that to 1.
 
 ## GC-Backed Cleanup
 
-The observer pool uses `WeakMap<Element, Callback | Set<Callback>>` keyed by DOM elements. When a component unmounts and its DOM element is garbage collected, the WeakMap entry is automatically cleaned up. Additionally, a `FinalizationRegistry` removes any stale observations:
+The observer pool uses `WeakMap<Element, Callback | Set<Callback>>` keyed by DOM elements. When a component unmounts and its DOM element is garbage collected, the WeakMap entry is automatically cleaned up. Additionally, a `FinalizationRegistry` corrects the pool's element counter:
 
 ```typescript
-readonly #finalizer = new FinalizationRegistry<WeakRef<Element>>((ref) => {
-  const el = ref.deref();
-  if (el) {
-    this.#observer.unobserve(el);
-    this.#size--;
-  }
+readonly #finalizer = new FinalizationRegistry<void>(() => {
+  // Element was GC'd — the browser's ResizeObserver internally stops
+  // observing garbage-collected targets. We only need to correct the
+  // size counter. WeakMap entries auto-clean on GC.
+  this.#size--;
 });
 ```
 
-This prevents memory leaks even if a component's cleanup effect fails to run (edge case in strict mode double-invocation or error boundaries).
+The browser's `ResizeObserver` stops observing garbage-collected targets on its own, and the `WeakMap` entry disappears with the element — so the registry's only job is keeping `observedCount` accurate. This holds even if a component's cleanup effect fails to run (edge case in strict mode double-invocation or error boundaries).
 
 ::: warning FinalizationRegistry timing
 `FinalizationRegistry` callbacks are not guaranteed to run promptly. The primary cleanup mechanism is still the `useEffect` cleanup function (or `using` disposal). The registry is a safety net, not the primary path.
@@ -125,10 +124,12 @@ Worker mode adds latency (measurements travel through `SharedArrayBuffer`) but r
 
 | Metric | Main Thread Mode | Worker Mode |
 |--------|-----------------|-------------|
-| Main thread ResizeObserver callbacks | Yes | No |
-| Measurement latency | ~0ms (synchronous) | ~16-33ms (1-2 frames) |
-| Main thread jank during resize | Possible | Eliminated |
-| Best for | Most apps | Animation-heavy, canvas-heavy |
+| Observer callback work | Extract + schedule + `setState` | SAB write only (`Float16Array` + `Atomics`) |
+| Measurement latency | 1 frame (rAF flush) | ~16-33ms (1-2 frames, rAF poll) |
+| Zero-copy sharing with compute workers | — | Yes (workers read the SAB directly) |
+| Best for | Most apps | Animation-heavy, canvas/WASM pipelines |
+
+Note that the `ResizeObserver` itself always runs on the main thread in both modes — it is a DOM API. Worker mode's benefit is that measurements land in a `SharedArrayBuffer` that compute workers can read without message passing, and React state updates are skipped entirely on frames where nothing changed.
 
 ```mermaid
 flowchart LR
@@ -137,9 +138,10 @@ flowchart LR
     end
 
     subgraph WM["Worker Mode"]
-        E["Resize"] --> F["Worker writes SAB"]
-        F --> G["Main reads SAB in rAF"]
+        E["Resize"] --> F["Observer writes SAB\n(Float16 + Atomics)"]
+        F --> G["rAF poll reads SAB\n(only when dirty)"]
         G --> H["Render"]
+        F -.-> W["Compute workers\nread SAB directly"]
     end
 ```
 

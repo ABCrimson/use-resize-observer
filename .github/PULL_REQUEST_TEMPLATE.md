@@ -23,7 +23,7 @@
 - [ ] `npm run test` passes (unit + browser)
 - [ ] `npm run size` passes (bundle size limits)
 - [ ] `npm run build` produces correct output
-- [ ] New code has 100% branch coverage
+- [ ] New code meets the coverage thresholds (95% lines/functions/statements, 85% branches)
 - [ ] API changes documented in TypeDoc JSDoc
 - [ ] Breaking changes documented in CHANGELOG
 

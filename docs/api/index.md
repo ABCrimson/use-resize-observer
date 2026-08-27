@@ -105,7 +105,7 @@ Main-thread resize observation with `SharedArrayBuffer` + `Float16Array` + `Atom
 
 Requires `crossOriginIsolated === true` (COOP/COEP headers).
 
-**Parameters:** Same as `useResizeObserver` except `onResize` receives `{ width, height }` instead of `ResizeObserverEntry`.
+**Parameters:** `ref` and `box` as in `useResizeObserver` — there is no `root` option (the SAB pool is document-global), and `onResize` receives `{ width, height }` instead of a `ResizeObserverEntry`. The SAB slot stores `content-box` and `border-box` sizes; `device-pixel-content-box` reports content-box values in Worker mode.
 
 **Returns:** `UseResizeObserverResult<T>` (entry is always `undefined` in Worker mode).
 
