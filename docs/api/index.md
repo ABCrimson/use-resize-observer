@@ -73,13 +73,16 @@ Framework-agnostic factory using the shared pool.
 | `box` | `ResizeObserverBoxOptions` | `'content-box'` | Box model. |
 | `root` | `Document \| ShadowRoot` | `document` | Pool scope. |
 
-**Returns:** `ResizeObserverFactory`
+**Returns:** `ResizeObserverFactory & Disposable`
 
 | Method | Signature | Description |
 |--------|-----------|-------------|
 | `observe` | `(target: Element, cb: ResizeCallback) => void` | Start observing. |
 | `unobserve` | `(target: Element, cb: ResizeCallback) => void` | Stop one callback. |
-| `disconnect` | `() => void` | Stop all observations. |
+| `disconnect` | `() => void` | Stop all observations tracked by this factory. |
+| `[Symbol.dispose]` | `() => void` | Calls `disconnect()`; enables `using` declarations. |
+
+Runs on the shared pool — the same native `ResizeObserver` and rAF scheduler as the React hooks.
 
 ---
 
@@ -129,19 +132,44 @@ Returns `boolean`. `false` on server, `true` if `globalThis.ResizeObserver` exis
 
 Framework-agnostic observable using `EventTarget` dispatching.
 
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `target` | `Element` | — | Element to observe. |
+| `options.box` | `ResizeObserverBoxOptions` | `'content-box'` | Box model to report. |
+
+**Returns:** `ResizeObservable` — `EventTarget & Disposable`, plus `disconnect(): void`.
+
 ```ts
-import { createResizeObservable } from '@crimson_dev/use-resize-observer/core';
+import {
+  createResizeObservable,
+  type ResizeEventDetail,
+} from '@crimson_dev/use-resize-observer/core';
 
 const obs = createResizeObservable(element, { box: 'content-box' });
 obs.addEventListener('resize', (e) => {
-  const { width, height } = (e as CustomEvent).detail;
+  const { width, height } = (e as CustomEvent<ResizeEventDetail>).detail;
 });
 obs.disconnect();
 ```
 
+> [!IMPORTANT]
+> This entry is **not pooled**. Each call constructs its own native `ResizeObserver`. Use `createResizeObserver` from the main entry when you want pooled observation.
+
 ### `ResizeEvent`
 
-Custom event class extending `CustomEvent<ResizeEventDetail>`.
+Custom event class extending `CustomEvent<ResizeEventDetail>`, dispatched with type `'resize'`.
+
+### `ResizeEventDetail`
+
+```ts
+interface ResizeEventDetail {
+  readonly width: number;
+  readonly height: number;
+  readonly entry: ResizeObserverEntry;
+}
+```
 
 ---
 
@@ -176,4 +204,34 @@ interface UseResizeObserverResult<T extends Element = Element> {
   height: number | undefined;
   entry: ResizeObserverEntry | undefined;
 }
+
+interface CreateResizeObserverOptions {
+  box?: ResizeObserverBoxOptions;
+  root?: Document | ShadowRoot;
+}
+
+interface ResizeObserverFactory {
+  observe(target: Element, callback: ResizeCallback): void;
+  unobserve(target: Element, callback: ResizeCallback): void;
+  disconnect(): void;
+}
+
+// Value type in the Map returned by useResizeObserverEntries
+interface ResizeEntry {
+  readonly width: number;
+  readonly height: number;
+  readonly entry: ResizeObserverEntry;
+}
+
+interface UseResizeObserverEntriesOptions {
+  box?: ResizeObserverBoxOptions;
+  root?: Document | ShadowRoot;
+}
 ```
+
+All of the above are exported as types from the main entry, except `ResizeEventDetail`, `ResizeObservable`, and `CreateResizeObservableOptions`, which come from `/core`.
+
+---
+
+> [!NOTE]
+> **Maintainers:** this page is hand-written and must be updated by hand when the public API changes — it is not generated on deploy. `typedoc.json` points its `out` at `docs/api`, so running `npm run docs:build` locally overwrites this file. See [CONTRIBUTING](https://github.com/ABCrimson/use-resize-observer/blob/main/CONTRIBUTING.md#documentation).

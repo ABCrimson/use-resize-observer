@@ -138,7 +138,33 @@ const MultiBoxExample = () => {
 };
 ```
 
-Both hook instances share the same underlying `ResizeObserver` through the pool, so there is no performance penalty for observing the same element twice.
+This works, and it is worth understanding exactly why — the mechanics are not obvious.
+
+A native `ResizeObserver` holds **one** set of options per target. The pool calls `observer.observe(target, { box })` for every hook, so the last hook to mount wins: its `box` becomes the notification trigger for that element. That does not corrupt anything, because every `ResizeObserverEntry` the browser delivers carries *all three* size arrays (`contentBoxSize`, `borderBoxSize`, `devicePixelContentBoxSize`) regardless of which box was registered. Each hook reads its own box out of the shared entry, so both readings stay correct.
+
+```mermaid
+flowchart TB
+    E["One element"] --> P["Shared pool<br>1 native ResizeObserver"]
+    P --> Entry["ResizeObserverEntry<br>carries all 3 size arrays"]
+    Entry --> H1["Hook A reads<br>contentBoxSize"]
+    Entry --> H2["Hook B reads<br>borderBoxSize"]
+```
+
+The practical consequences:
+
+| | Behaviour |
+|---|---|
+| Native observers created | One per document root, no matter how many hooks |
+| Which `box` triggers a notification | The one from the most recent `observe()` call |
+| Which `box` each hook reports | Its own — extraction reads the shared entry per hook |
+| Cost of a second hook on the same element | A callback in the pool's registry; no second observer |
+
+> [!NOTE]
+> Changing `box` on a mounted hook is safe: `box` is in the hook's effect dependencies, so the element is re-observed with the new option.
+
+::: warning Edge case
+Because only the last-registered `box` drives notifications, a resize that changes *only* the other box model may not fire. In practice padding and border changes move both boxes, so this is rare — but if you need two box models to update independently and reliably, observe two different elements rather than one element twice.
+:::
 
 ## TypeScript Types
 

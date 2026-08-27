@@ -119,6 +119,12 @@ export default {
 
 ResizeObserver is a DOM API and runs on the **main thread** -- it cannot run inside a Web Worker. Worker mode uses a main-thread ResizeObserver that writes measurements directly into a `SharedArrayBuffer`. This SAB can then be read by compute workers (WebGL, WASM) without any message passing overhead.
 
+The thread topology — what runs where, and what crosses the boundary:
+
+![Worker protocol: the main thread observes and calls writeSlot into the SharedArrayBuffer while an rAF loop reads back into setState; optional compute workers read the same buffer via Atomics](/diagrams/worker-protocol.svg)
+
+The same exchange as an ordered sequence:
+
 ```mermaid
 sequenceDiagram
     participant RO as ResizeObserver (Main Thread)

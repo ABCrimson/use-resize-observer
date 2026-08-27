@@ -67,12 +67,16 @@ sequenceDiagram
     end
 ```
 
+![Shared observer pool: three components multiplexed through one ObserverPool into a single ResizeObserver, WeakMap + FinalizationRegistry, RafScheduler, and one React render](/diagrams/pool-architecture.svg)
+
 ### WeakMap cleanup
 
 Using a `WeakMap` keyed by the DOM element ensures that when an element is garbage collected (after unmounting), its entry in the map is automatically cleaned up. No manual memory management required.
 
 ::: tip Why not one observer per box model?
-The `ResizeObserver` API lets you specify the box model per `observe()` call. Elements observed with different box models can share the same observer instance. The pool handles this by including the box model in the observation options.
+The `ResizeObserver` API takes the box model per `observe()` call, so **different elements** with different box models share one observer without conflict — the pool simply passes each element's options through.
+
+The one subtlety is the **same element** observed twice with different box models: a native observer keeps only the latest options per target, so the most recent `observe()` decides which box triggers notifications. Readings stay correct regardless, because every delivered entry carries all three size arrays. See [Box Models](/guide/box-models#combining-box-models).
 :::
 
 ## rAF Batching
@@ -100,6 +104,10 @@ flowchart LR
 The double-buffer swap means new resize events can accumulate in the fresh buffer while the previous buffer is being flushed. This eliminates per-flush `new Map()` allocation entirely.
 
 This means that even if 100 elements resize simultaneously (e.g., during a window resize), only **one React render cycle** occurs.
+
+The full pipeline, layer by layer, from the observer callback to a single painted frame:
+
+![Scheduling pipeline: ResizeObserver callback, entry deduplication with last-write-wins, rAF batcher, startTransition, React scheduler, single-frame paint](/diagrams/scheduling.svg)
 
 ## startTransition Integration
 
@@ -144,33 +152,38 @@ flowchart TD
 Cleanup relies on the `useEffect` cleanup function. The pool's `unobserve` method decrements the callback set and, when no callbacks remain for an element, calls `ResizeObserver.unobserve`:
 
 ```tsx
-// Simplified internal implementation
+// Simplified internal implementation (see src/hook.ts)
 useEffect(() => {
-  const element = ref.current;
+  const element = targetRef.current;
   if (!element) return;
 
-  const pool = getSharedPool(root ?? element.ownerDocument);
+  const pool = getSharedPool(root ?? element.ownerDocument, customCtor);
   pool.observe(element, { box }, callback);
 
   return () => {
     pool.unobserve(element, callback);
   };
-}, [box]);
+}, [targetRef, box, root, ResizeObserverCtor]);
 ```
+
+Those four dependencies are the whole re-observation contract: swap the ref, change the box model, change the root, or inject a different constructor through context, and the element is unobserved and re-observed. Nothing else re-registers.
 
 The cleanup function runs when the effect re-runs or the component unmounts. Additionally, `FinalizationRegistry` acts as a safety net for GC-backed cleanup if the effect cleanup is missed.
 
 ## Memory Layout
 
-For the standard (non-worker) mode, the memory footprint per observed element is:
+For the standard (non-worker) mode, the per-element footprint is small and bounded:
 
-| Allocation | Size | Lifetime |
-|-----------|------|----------|
-| WeakMap entry (single callback) | ~48B | Element lifetime |
-| WeakMap entry (promoted to Set) | ~96B | Element lifetime |
-| Double-buffer Map entry | ~48B | Single frame |
+| Allocation | Approx. size | Lifetime |
+|-----------|--------------|----------|
+| WeakMap entry (single callback) | ~48 B | Element lifetime |
+| WeakMap entry (promoted to Set) | ~96 B | Element lifetime |
+| Double-buffer Map entry | ~48 B | Single frame |
 
-There is no per-element `ResizeObserver` instance, no per-element closure for the observer callback, no retained `ResizeObserverEntry` objects after the flush, and no `new Map()` allocation on flush (buffers are reused via XOR swap).
+> [!NOTE]
+> The byte figures are order-of-magnitude estimates for V8 — engine internals for `WeakMap` and `Set` are implementation details and will differ across runtimes and versions. The structural guarantees below are the part that holds everywhere.
+
+What is guaranteed structurally: no per-element `ResizeObserver` instance, no per-element closure for the observer callback, no retained `ResizeObserverEntry` objects after the flush, and no `new Map()` allocation on flush (buffers are reused via XOR swap).
 
 ## Worker Mode Architecture
 

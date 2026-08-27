@@ -2,6 +2,21 @@
 
 Copy-paste ready examples for common use cases. Each example is self-contained and can be dropped into any React 19.3+ project.
 
+| # | Example | API used |
+|---|---------|----------|
+| 1 | [Basic Width/Height Tracking](#_1-basic-width-height-tracking) | `useResizeObserver` |
+| 2 | [Responsive Breakpoint Component](#_2-responsive-breakpoint-component) | `useResizeObserver` |
+| 3 | [Responsive Typography](#_3-responsive-typography) | `useResizeObserver` |
+| 4 | [Virtual List Row Height Measurement](#_4-virtual-list-row-height-measurement) | `onResize` callback |
+| 5 | [Canvas with Device Pixel Ratio](#_5-canvas-with-device-pixel-ratio) | `box: 'device-pixel-content-box'` |
+| 6 | [Aspect Ratio Tracker](#_6-aspect-ratio-tracker) | `useResizeObserver` |
+| 7 | [Worker Mode Grid](#_7-worker-mode-grid) | `useResizeObserverWorker` |
+| 8 | [Multi-Element Dashboard](#_8-multi-element-dashboard) | `useResizeObserverEntries` |
+| 9 | [SSR-Safe Component](#_9-ssr-safe-component) | `useResizeObserver` |
+| 10 | [Factory API in Vanilla JS](#_10-factory-api-in-vanilla-js) | `createResizeObserver` |
+| 11 | [Conditional Observation](#_11-conditional-observation) | `ref` swapping |
+| 12 | [Border-Box vs Content-Box Comparison](#_12-border-box-vs-content-box-comparison) | Two hooks, one element |
+
 ## 1. Basic Width/Height Tracking
 
 The simplest use case: display an element's dimensions as it resizes.
@@ -56,9 +71,10 @@ const ResponsiveCard = () => {
 Scale font size based on container width:
 
 ```tsx
+import type { ReactNode } from 'react';
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 
-const ResponsiveHeading = ({ children }: { children: React.ReactNode }) => {
+const ResponsiveHeading = ({ children }: { children: ReactNode }) => {
   const { ref, width } = useResizeObserver<HTMLHeadingElement>();
 
   const fontSize = width !== undefined
@@ -78,6 +94,7 @@ const ResponsiveHeading = ({ children }: { children: React.ReactNode }) => {
 Measure dynamic row heights for a virtual scrolling list:
 
 ```tsx
+import type { ReactNode } from 'react';
 import { useResizeObserver } from '@crimson_dev/use-resize-observer';
 
 const MeasuredRow = ({
@@ -87,7 +104,7 @@ const MeasuredRow = ({
 }: {
   index: number;
   onHeightChange: (index: number, height: number) => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) => {
   const { ref } = useResizeObserver<HTMLDivElement>({
     onResize: (entry) => {
@@ -227,7 +244,7 @@ const WorkerCell = ({ index }: { index: number }) => {
 Track multiple panels with a single hook:
 
 ```tsx
-import { useRef } from 'react';
+import { useMemo, useRef, type RefObject } from 'react';
 import { useResizeObserverEntries } from '@crimson_dev/use-resize-observer';
 
 const Dashboard = () => {
@@ -235,26 +252,38 @@ const Dashboard = () => {
   const main = useRef<HTMLDivElement>(null);
   const footer = useRef<HTMLDivElement>(null);
 
-  const entries = useResizeObserverEntries([sidebar, main, footer]);
+  // Stable array identity — see the warning below.
+  const refs = useMemo(() => [sidebar, main, footer], []);
+  const entries = useResizeObserverEntries(refs);
 
-  const sidebarWidth = entries.get(sidebar.current!)?.width;
-  const mainWidth = entries.get(main.current!)?.width;
+  const widthOf = (ref: RefObject<Element | null>) => {
+    const el = ref.current;
+    const width = el ? entries.get(el)?.width : undefined;
+    return width !== undefined ? `${Math.round(width)}px` : '...';
+  };
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gridTemplateRows: '1fr auto', gap: 8, height: '100vh' }}>
       <div ref={sidebar} style={{ background: 'oklch(17% 0.02 11)', padding: 16 }}>
-        Sidebar: {sidebarWidth ? `${Math.round(sidebarWidth)}px` : '...'}
+        Sidebar: {widthOf(sidebar)}
       </div>
       <div ref={main} style={{ background: 'oklch(15% 0.02 11)', padding: 16 }}>
-        Main: {mainWidth ? `${Math.round(mainWidth)}px` : '...'}
+        Main: {widthOf(main)}
       </div>
       <div ref={footer} style={{ gridColumn: '1 / -1', background: 'oklch(17% 0.02 11)', padding: 16 }}>
-        Footer: {entries.get(footer.current!)?.width ? `${Math.round(entries.get(footer.current!)!.width!)}px` : '...'}
+        Footer: {widthOf(footer)}
       </div>
     </div>
   );
 };
 ```
+
+::: warning Keep the refs array stable
+`useResizeObserverEntries` lists `refs` in its effect dependencies. Passing a fresh array literal — `useResizeObserverEntries([sidebar, main, footer])` — creates a new identity on every render, so the effect tears down and re-registers every observation each time the component renders. Hoist it with `useMemo` (or a module constant) as above.
+:::
+
+> [!NOTE]
+> The multi-element hook reads `box` once when the effect runs and does **not** list it as a dependency, so changing `box` on a mounted `useResizeObserverEntries` will not re-observe. The single-element `useResizeObserver` does track `box` and re-observes on change. If you need a switchable box model across many elements, remount or key the component.
 
 ## 9. SSR-Safe Component
 
@@ -307,9 +336,23 @@ document.querySelectorAll('[data-track-size]').forEach((el) => {
   });
 });
 
-// Cleanup when done
-observer.disconnect();
+// Later — on teardown, route change, or unmount:
+// observer.disconnect();
 ```
+
+::: warning Do not disconnect inline
+`disconnect()` unobserves everything the factory is tracking. Calling it immediately after the `forEach` above would stop observation before a single resize fired. Call it when the page or view is actually being torn down.
+:::
+
+`createResizeObserver` also implements `Disposable`, so a scoped lifetime can be expressed with an ES2026 `using` declaration instead of a manual call:
+
+```typescript
+using observer = createResizeObserver({ box: 'border-box' });
+// observer.disconnect() runs automatically at the end of this scope
+```
+
+> [!NOTE]
+> Unlike `createResizeObservable` from the `/core` entry, this factory runs on the **shared pool** — it reuses the same native `ResizeObserver` and rAF scheduler as the React hooks, so mixing the two APIs in one app costs no extra observers.
 
 ## 11. Conditional Observation
 

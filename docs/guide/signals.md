@@ -144,7 +144,10 @@ const ObservedComponent = observer(() => {
 For non-React contexts, use the `/core` entry with any signal library:
 
 ```typescript
-import { createResizeObservable } from '@crimson_dev/use-resize-observer/core';
+import {
+  createResizeObservable,
+  type ResizeEventDetail,
+} from '@crimson_dev/use-resize-observer/core';
 import { signal } from '@preact/signals';
 
 const element = document.getElementById('target')!;
@@ -154,17 +157,44 @@ const width = signal(0);
 const height = signal(0);
 
 observable.addEventListener('resize', (event) => {
-  const detail = (event as CustomEvent).detail;
-  width.value = detail.width;
-  height.value = detail.height;
+  const { width: w, height: h } = (event as CustomEvent<ResizeEventDetail>).detail;
+  width.value = w;
+  height.value = h;
 });
+
+// When you are done:
+observable.disconnect();
 ```
+
+The `/core` entry exports the event shape so you do not have to hand-type `detail`:
+
+| Export | Kind | Shape |
+|--------|------|-------|
+| `createResizeObservable(target, options?)` | function | Returns a `ResizeObservable` |
+| `ResizeObservable` | interface | `EventTarget & Disposable` plus `disconnect()` |
+| `ResizeEvent` | class | `CustomEvent<ResizeEventDetail>`, type `'resize'` |
+| `ResizeEventDetail` | interface | `{ width: number; height: number; entry: ResizeObserverEntry }` |
+
+Because `ResizeObservable` implements `Disposable`, an ES2026 `using` declaration disposes it at scope exit — no manual `disconnect()`:
+
+```typescript
+{
+  using observable = createResizeObservable(element);
+  observable.addEventListener('resize', handler);
+} // disconnected here
+```
+
+> [!IMPORTANT]
+> **`/core` is not pooled.** `createResizeObservable` constructs its own native `ResizeObserver` per call. The shared-pool architecture backs the React hooks and the `createResizeObserver` factory on the main entry — not this one. For a handful of observables that is fine; if you are creating hundreds, reach for `createResizeObserver` from the main entry instead, which multiplexes them through one observer per document root.
 
 ## Solid.js Integration
 
 ```typescript
 import { createSignal, onCleanup } from 'solid-js';
-import { createResizeObservable } from '@crimson_dev/use-resize-observer/core';
+import {
+  createResizeObservable,
+  type ResizeEventDetail,
+} from '@crimson_dev/use-resize-observer/core';
 
 function useResizeObserver(el: () => Element) {
   const [width, setWidth] = createSignal(0);
@@ -173,7 +203,7 @@ function useResizeObserver(el: () => Element) {
   const observable = createResizeObservable(el());
 
   observable.addEventListener('resize', (event) => {
-    const detail = (event as CustomEvent).detail;
+    const detail = (event as CustomEvent<ResizeEventDetail>).detail;
     setWidth(detail.width);
     setHeight(detail.height);
   });
@@ -188,7 +218,10 @@ function useResizeObserver(el: () => Element) {
 
 ```svelte
 <script lang="ts">
-  import { createResizeObservable } from '@crimson_dev/use-resize-observer/core';
+  import {
+    createResizeObservable,
+    type ResizeEventDetail,
+  } from '@crimson_dev/use-resize-observer/core';
 
   let container: HTMLDivElement;
   let width = $state(0);
@@ -198,7 +231,7 @@ function useResizeObserver(el: () => Element) {
     if (!container) return;
     const observable = createResizeObservable(container);
     observable.addEventListener('resize', (event) => {
-      const detail = (event as CustomEvent).detail;
+      const detail = (event as CustomEvent<ResizeEventDetail>).detail;
       width = detail.width;
       height = detail.height;
     });
@@ -213,20 +246,26 @@ function useResizeObserver(el: () => Element) {
 
 ## Compiler Compatibility
 
-All signal patterns above are verified compatible with the React Compiler. The key reason: the `onResize` callback is ref-stabilized internally, so signal writes always reference the current signal instance without needing `useCallback`.
+The half of this that **this library** guarantees: `onResize` is ref-stabilized internally (`hook.ts` writes `onResizeRef.current` on every render and calls it through the ref), so its identity never changes and the React Compiler has nothing to invalidate. You never need `useCallback` around a signal write. That behaviour is covered by the `compiler` test project, which runs the hook suite through `babel-plugin-react-compiler`.
 
-::: warning Signal library compatibility
-Ensure your signal library is itself compatible with the React Compiler. `@preact/signals-react` v2+ and Legend State v3+ are verified compatible. Check your library's documentation for compiler support status.
-:::
+The half it **cannot** guarantee: whether your signal library is itself compiler-safe.
 
-## Performance Comparison
+> [!WARNING]
+> No third-party signal library is exercised by this repository's test suite — the `compiler` project tests the hook, not `@preact/signals-react`, Reactively, or Legend State. The patterns on this page follow each library's documented usage, but treat compiler compatibility as something to confirm against your library's own release notes and to verify in your app.
 
-| Pattern | Renders on Resize | DOM Updates | Memory |
-|---------|------------------|-------------|--------|
-| Standard `useState` | Full component | Full subtree | Lowest |
-| Preact Signals | None (signal subscriber only) | Text nodes only | Low |
-| Reactively | None (reactive consumer only) | Targeted | Low |
-| Legend State | None (observer boundary only) | Observer subtree | Low |
+## Update Scope by Pattern
+
+What each pattern re-runs when the observed element resizes. This is mechanism, not a benchmark — measure your own app before switching.
+
+| Pattern | Component re-render | DOM updated | Extra dependency |
+|---------|--------------------|-------------|------------------|
+| Standard `useState` | Yes — the component and its subtree reconcile | Whatever reconciliation changes | None |
+| Preact Signals | No — the component body does not re-run | The subscribing text nodes | `@preact/signals-react` |
+| Reactively | No | Whatever the reactive consumer touches | `@reactively/core` |
+| Legend State | No | Inside the `observer()` boundary | `@legendapp/state` |
+
+> [!NOTE]
+> The standard hook is already batched: the pool coalesces every resize in a frame into a single `requestAnimationFrame` flush wrapped in `startTransition`, so 100 elements resizing at once produce one render pass. Signals reduce the *scope* of that pass, not the number of passes. Reach for them when the component subtree is genuinely expensive, not by default.
 
 ## Next Steps
 
